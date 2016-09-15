@@ -5,6 +5,8 @@ extern crate serde;
 extern crate serde_json;
 
 use std::io::{Read, Write};
+use std::sync::mpsc::{channel, TryRecvError};
+use std::time;
 
 #[derive(Debug, Deserialize)]
 #[allow(non_snake_case)]
@@ -31,7 +33,7 @@ impl Crc8 {
 
     fn add_byte(&mut self, byte: u8) {
         self.crc ^= (byte as u16) << 8;
-        for i in (1..9).rev() {
+        for _ in 0..8 {
             if self.crc & 0x8000 != 0 {
                 self.crc ^= 0x1070 << 3;
             }
@@ -39,8 +41,57 @@ impl Crc8 {
         }
     }
 
-    fn end(self) -> u8 {
+    fn finish(self) -> u8 {
         (self.crc >> 8) as u8
+    }
+}
+
+struct Message {
+    buffer: Vec<u8>,
+}
+
+#[derive(Debug, Clone)]
+enum MessageError {
+    TooBig,
+    TooSmall,
+}
+
+impl Message {
+    fn new() -> Message {
+        Message { buffer: Vec::new() }
+    }
+
+    fn add_byte(&mut self, byte: u8) {
+        self.buffer.push(byte);
+    }
+
+    fn append<I>(&mut self, i: I)
+        where I: IntoIterator<Item = u8>
+    {
+        self.buffer.extend(i);
+    }
+
+    fn finish(mut self) -> Result<Vec<u8>, MessageError> {
+        if self.buffer.len() > 256 {
+            Err(MessageError::TooBig)
+        } else if self.buffer.len() == 0 {
+            Err(MessageError::TooSmall)
+        } else {
+            let byte_len = (self.buffer.len() - 1) as u8;
+            // Create CRC.
+            let mut crc = Crc8::new();
+            // Add the length byte to the CRC.
+            crc.add_byte(byte_len);
+            // Add the payload to the CRC.
+            for b in &self.buffer {
+                crc.add_byte(*b);
+            }
+            // Add the magic sequence, CRC, and length to the message payload.
+            let mut v = vec![128, 37, 35, 46, crc.finish(), byte_len];
+            // Add the entire payload.
+            v.append(&mut self.buffer);
+            Ok(v)
+        }
     }
 }
 
@@ -52,45 +103,69 @@ fn main() {
 
     fn handle_client(mut stream: TcpStream) {
         println!("New connection.");
+
+        // The Wifly always sends this 7-byte sequence on connection.
         let mut initialbuff = [0u8; 7];
-        let magic_start = [128u8, 37, 35, 46];
-        let buff = [0u8, 'c' as u8];
         stream.read_exact(&mut initialbuff).unwrap();
         if initialbuff != [42, 72, 69, 76, 76, 79, 42] {
             panic!("Didn't get magic values!");
         } else {
             println!("Got magic values, continuing.");
         }
-        let mut readstuff = [0u8; 1];
+
+        let json_iter = match stream.try_clone() {
+            Ok(s) => serde_json::StreamDeserializer::<Netmessage, _>::new(s.bytes()),
+            Err(e) => panic!("Unable to clone TCP stream: {}", e),
+        };
+
+        // Create a channel for sending back the Netmessages.
+        let (sender, receiver) = channel();
+
+        // Perform the JSON reading in a separate thread.
+        thread::spawn(move || {
+            for nmessage in json_iter {
+                sender.send(nmessage).unwrap_or_else(|e| panic!("Failed to send nmessage: {}", e));
+            }
+        });
+
+        // Create the time.
+        let mut prevtime = time::Instant::now();
+
+        // Create the heartbeat message.
+        let mut message = Message::new();
+        message.add_byte(0);
+        let heartbeat = match message.finish() {
+            Ok(v) => v,
+            Err(e) => panic!("Failed to create heartbeat message: {:?}", e),
+        };
+
         loop {
-            stream.write(&buff)
-                .unwrap_or_else(|e| panic!("Writing to TCP stream failed: {}", e));
-            // match serde_json::from_reader::<_, Netmessage>(&mut stream) {
-            // Ok(netmessage) => {
-            // println!("Packet: {:?}", netmessage);
-            // }
-            // Err(e) => println!("Failed to read JSON from stream: {}", e),
-            // }
-            stream.read_exact(&mut readstuff).unwrap();
-            println!("Got: {:?}", String::from_utf8(readstuff.to_vec()));
+            // Perform a non-blocking read from the stream.
+            match receiver.try_recv() {
+                Ok(Ok(m)) => println!("JSON: {:?}", m),
+                Ok(Err(e)) => println!("Got invalid JSON: {}", e),
+                Err(TryRecvError::Empty) => {}
+                Err(TryRecvError::Disconnected) => panic!("Receiver disconnected."),
+            }
+            let currtime = time::Instant::now();
+            if currtime - prevtime > time::Duration::from_secs(1) {
+                prevtime = currtime;
+                // Send heartbeat.
+                stream.write_all(&heartbeat[..])
+                    .unwrap_or_else(|e| panic!("Failed to send heartbeat: {}", e));
+            }
         }
     }
 
-    // accept connections and process them, spawning a new thread for each one
+    // Accept connections and process them, spawning a new thread for each one.
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                thread::spawn(move || {
-                    // connection succeeded
-                    handle_client(stream)
-                });
+                thread::spawn(move || handle_client(stream));
             }
             Err(e) => {
-                println!("Connection dropped: {}", e);
+                println!("Lost socket listener: {}", e);
             }
         }
     }
-
-    // close the socket server
-    drop(listener);
 }
