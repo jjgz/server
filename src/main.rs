@@ -20,6 +20,30 @@ enum Netmessage {
     },
 }
 
+struct Crc8 {
+    crc: u16,
+}
+
+impl Crc8 {
+    fn new() -> Crc8 {
+        Crc8 { crc: 0 }
+    }
+
+    fn add_byte(&mut self, byte: u8) {
+        self.crc ^= (byte as u16) << 8;
+        for i in (1..9).rev() {
+            if self.crc & 0x8000 != 0 {
+                self.crc ^= 0x1070 << 3;
+            }
+            self.crc <<= 1;
+        }
+    }
+
+    fn end(self) -> u8 {
+        (self.crc >> 8) as u8
+    }
+}
+
 fn main() {
     use std::net::{TcpListener, TcpStream};
     use std::thread;
@@ -29,6 +53,7 @@ fn main() {
     fn handle_client(mut stream: TcpStream) {
         println!("New connection.");
         let mut initialbuff = [0u8; 7];
+        let magic_start = [128u8, 37, 35, 46];
         let buff = [0u8, 'c' as u8];
         stream.read_exact(&mut initialbuff).unwrap();
         if initialbuff != [42, 72, 69, 76, 76, 79, 42] {
