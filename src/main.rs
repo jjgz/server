@@ -12,13 +12,20 @@ use std::time;
 #[allow(non_snake_case)]
 enum Netmessage {
     Netstats {
-        myName: String,
-        numGoodMessagesRecved: u32,
-        numCommErrors: u32,
-        numJSONRequestsRecved: u32,
-        numJSONResponsesRecved: u32,
-        numJSONRequestsSent: u32,
-        numJSONResponsesSent: u32,
+        #[serde(rename = "myName")]
+        my_name: String,
+        #[serde(rename = "numGoodMessagesRecved")]
+        num_good_messages_recved: u32,
+        #[serde(rename = "numCommErrors")]
+        num_comm_errors: u32,
+        #[serde(rename = "numJSONRequestsRecved")]
+        num_json_requests_recved: u32,
+        #[serde(rename = "numJSONResponsesRecved")]
+        num_json_responses_recved: u32,
+        #[serde(rename = "numJSONRequestsSent")]
+        num_json_requests_sent: u32,
+        #[serde(rename = "numJSONResponsesSent")]
+        num_json_responses_sent: u32,
     },
     AdcReading {
         reading: u32,
@@ -103,30 +110,6 @@ fn main() {
     use std::thread;
 
     let listener = TcpListener::bind("192.168.43.1:2000").unwrap();
-
-    let nmessg = Netmessage::Netstats {
-        myName: String::from("Sensor"),
-        numGoodMessagesRecved: 0,
-        numCommErrors: 0,
-        numJSONRequestsRecved: 0,
-        numJSONResponsesRecved: 0,
-        numJSONRequestsSent: 0,
-        numJSONResponsesSent: 0,
-    };
-
-    println!("Good netmsg: {}", serde_json::to_string(&nmessg).unwrap());
-
-    let nmessg = Netmessage::Netstats {
-        myName: String::from("Sensor"),
-        numGoodMessagesRecved: 0,
-        numCommErrors: 0,
-        numJSONRequestsRecved: 0,
-        numJSONResponsesRecved: 0,
-        numJSONRequestsSent: 0,
-        numJSONResponsesSent: 0,
-    };
-
-    println!("Good netmsg: {}", serde_json::to_string(&nmessg).unwrap());
 
     fn handle_client(mut stream: TcpStream) {
         println!("New connection.");
