@@ -8,7 +8,7 @@ use std::io::{Read, Write};
 use std::sync::mpsc::{channel, TryRecvError};
 use std::time;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[allow(non_snake_case)]
 enum Netmessage {
     Netstats {
@@ -99,7 +99,19 @@ fn main() {
     use std::net::{TcpListener, TcpStream};
     use std::thread;
 
-    let listener = TcpListener::bind("192.168.43.177:2000").unwrap();
+    let listener = TcpListener::bind("192.168.43.1:2000").unwrap();
+
+    let nmessg = Netmessage::Netstats {
+        myName: String::from("Sensor"),
+        numGoodMessagesRecved: 0,
+        numCommErrors: 0,
+        numJSONRequestsRecved: 0,
+        numJSONResponsesRecved: 0,
+        numJSONRequestsSent: 0,
+        numJSONResponsesSent: 0,
+    };
+
+    println!("Good netmsg: {}", serde_json::to_string(&nmessg).unwrap());
 
     fn handle_client(mut stream: TcpStream) {
         println!("New connection.");
@@ -113,19 +125,27 @@ fn main() {
             println!("Got magic values, continuing.");
         }
 
-        let json_iter = match stream.try_clone() {
-            Ok(s) => serde_json::StreamDeserializer::<Netmessage, _>::new(s.bytes()),
+        let mut json_iter = match stream.try_clone() {
+            Ok(s) => s/*serde_json::StreamDeserializer::<Netmessage, _>::new(s.bytes())*/,
             Err(e) => panic!("Unable to clone TCP stream: {}", e),
         };
 
         // Create a channel for sending back the Netmessages.
-        let (sender, receiver) = channel();
+        let (sender, receiver) = channel::<Result<Netmessage, TryRecvError>>();
 
         // Perform the JSON reading in a separate thread.
         thread::spawn(move || {
-            for nmessage in json_iter {
-                sender.send(nmessage).unwrap_or_else(|e| panic!("Failed to send nmessage: {}", e));
+            let mut buff = [0u8; 50];
+            loop {
+                json_iter.read_exact(&mut buff).unwrap();
+                for c in buff.iter() {
+                    print!("{}", *c as char);
+                }
+                println!("");
             }
+            // for nmessage in json_iter {
+            // sender.send(nmessage).unwrap_or_else(|e| panic!("Failed to send nmessage: {}", e));
+            // }
         });
 
         // Create the time.
@@ -133,11 +153,13 @@ fn main() {
 
         // Create the heartbeat message.
         let mut message = Message::new();
-        message.add_byte(0);
+        message.add_byte(0xAA);
         let heartbeat = match message.finish() {
             Ok(v) => v,
             Err(e) => panic!("Failed to create heartbeat message: {:?}", e),
         };
+
+        println!("Heartbeat: {:?}", heartbeat);
 
         loop {
             // Perform a non-blocking read from the stream.
@@ -169,3 +191,4 @@ fn main() {
         }
     }
 }
+
