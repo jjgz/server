@@ -20,6 +20,9 @@ enum Netmessage {
         numJSONRequestsSent: u32,
         numJSONResponsesSent: u32,
     },
+    AdcReading {
+        reading: u32,
+    },
 }
 
 struct Crc8 {
@@ -126,26 +129,26 @@ fn main() {
         }
 
         let mut json_iter = match stream.try_clone() {
-            Ok(s) => s/*serde_json::StreamDeserializer::<Netmessage, _>::new(s.bytes())*/,
+            Ok(s) => serde_json::StreamDeserializer::<Netmessage, _>::new(s.bytes()),
             Err(e) => panic!("Unable to clone TCP stream: {}", e),
         };
 
         // Create a channel for sending back the Netmessages.
-        let (sender, receiver) = channel::<Result<Netmessage, TryRecvError>>();
+        let (sender, receiver) = channel();
 
         // Perform the JSON reading in a separate thread.
         thread::spawn(move || {
-            let mut buff = [0u8; 50];
-            loop {
-                json_iter.read_exact(&mut buff).unwrap();
-                for c in buff.iter() {
-                    print!("{}", *c as char);
-                }
-                println!("");
-            }
-            // for nmessage in json_iter {
-            // sender.send(nmessage).unwrap_or_else(|e| panic!("Failed to send nmessage: {}", e));
-            // }
+            //let mut buff = [0u8; 50];
+            //loop {
+            //    json_iter.read_exact(&mut buff).unwrap();
+            //    for c in buff.iter() {
+            //        print!("{}", *c as char);
+            //    }
+            //    println!("");
+            //}
+             for nmessage in json_iter {
+             sender.send(nmessage).unwrap_or_else(|e| panic!("Failed to send nmessage: {}", e));
+             }
         });
 
         // Create the time.
