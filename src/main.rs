@@ -149,7 +149,7 @@ fn main() {
             Err(e) => panic!("Failed to create heartbeat message: {:?}", e),
         };
 
-        println!("Heartbeat: {:?}", heartbeat);
+        println!("##################");
 
         loop {
             // Perform a non-blocking read from the stream.
