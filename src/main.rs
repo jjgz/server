@@ -20,6 +20,9 @@ enum Netmessage {
         numJSONRequestsSent: u32,
         numJSONResponsesSent: u32,
     },
+    AdcReading {
+        reading: u32,
+    },
 }
 
 struct Crc8 {
@@ -99,7 +102,19 @@ fn main() {
     use std::net::{TcpListener, TcpStream};
     use std::thread;
 
-    let listener = TcpListener::bind("192.168.43.177:2000").unwrap();
+    let listener = TcpListener::bind("192.168.43.1:2000").unwrap();
+
+    let nmessg = Netmessage::Netstats {
+        myName: String::from("Sensor"),
+        numGoodMessagesRecved: 0,
+        numCommErrors: 0,
+        numJSONRequestsRecved: 0,
+        numJSONResponsesRecved: 0,
+        numJSONRequestsSent: 0,
+        numJSONResponsesSent: 0,
+    };
+
+    println!("Good netmsg: {}", serde_json::to_string(&nmessg).unwrap());
 
     let nmessg = Netmessage::Netstats {
         myName: String::from("Sensor"),
@@ -125,27 +140,19 @@ fn main() {
             println!("Got magic values, continuing.");
         }
 
-        let mut json_iter = match stream.try_clone() {
-            Ok(s) => s/*serde_json::StreamDeserializer::<Netmessage, _>::new(s.bytes())*/,
+        let json_iter = match stream.try_clone() {
+            Ok(s) => serde_json::StreamDeserializer::<Netmessage, _>::new(s.bytes()),
             Err(e) => panic!("Unable to clone TCP stream: {}", e),
         };
 
         // Create a channel for sending back the Netmessages.
-        let (sender, receiver) = channel::<Result<Netmessage, TryRecvError>>();
+        let (sender, receiver) = channel();
 
         // Perform the JSON reading in a separate thread.
         thread::spawn(move || {
-            let mut buff = [0u8; 100];
-            loop {
-                json_iter.read_exact(&mut buff).unwrap();
-                for c in buff.iter() {
-                    print!("{}", *c as char);
-                }
-                println!("");
+            for nmessage in json_iter {
+                sender.send(nmessage).unwrap_or_else(|e| panic!("Failed to send nmessage: {}", e));
             }
-            // for nmessage in json_iter {
-            // sender.send(nmessage).unwrap_or_else(|e| panic!("Failed to send nmessage: {}", e));
-            // }
         });
 
         // Create the time.
@@ -165,7 +172,7 @@ fn main() {
             // Perform a non-blocking read from the stream.
             match receiver.try_recv() {
                 Ok(Ok(m)) => println!("JSON: {:?}", m),
-                Ok(Err(e)) => println!("Got invalid JSON: {}", e),
+                Ok(Err(e)) => panic!("Closing: Got invalid JSON: {}", e),
                 Err(TryRecvError::Empty) => {}
                 Err(TryRecvError::Disconnected) => panic!("Receiver disconnected."),
             }
