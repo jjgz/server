@@ -34,6 +34,18 @@ enum Netmessage {
     },
     ConfirmGrabberGrabbing,
     ConfirmGrabberLifting,
+    ConfirmGrabberGrabbed,
+    ConfirmGrabberLifted,
+    Path {
+        points: Vec<[f32; 2]>,
+    },
+    Stop,
+    StopAck,
+    RotationTick,
+    UltraSensor {
+        reading: u32,
+    },
+    GrabberPathAndGrabFinish,
 }
 
 struct Crc8 {
@@ -179,12 +191,12 @@ fn main() {
             Err(e) => panic!("Failed to create RequestNetstats message: {:?}", e),
         };
 
-        // Create the ConfirmGrabberGrabbing message.
+        // Create the screwed up message.
         let mut message = Message::new();
-        message.add_message(&Netmessage::ConfirmGrabberGrabbing);
-        let confirm_grabber_grabbing = match message.finish() {
+        message.append(['b' as u8, 'l' as u8, 'a' as u8].iter().cloned());
+        let screwed_up = match message.finish() {
             Ok(v) => v,
-            Err(e) => panic!("Failed to create ConfirmGrabberGrabbing message: {:?}", e),
+            Err(e) => panic!("Failed to create screwed up message: {:?}", e),
         };
 
         println!("##################");
@@ -203,8 +215,8 @@ fn main() {
                 // Send Heartbeat.
                 stream.write_all(&heartbeat[..])
                     .unwrap_or_else(|e| panic!("Failed to send Heartbeat: {}", e));
-                stream.write_all(&confirm_grabber_grabbing[..])
-                    .unwrap_or_else(|e| panic!("Failed to send Heartbeat: {}", e));
+                stream.write_all(&screwed_up[..])
+                    .unwrap_or_else(|e| panic!("Failed to send screwed up message: {}", e));
             }
             if currtime - prev_request_netstats > time::Duration::from_secs(5) {
                 prev_request_netstats = currtime;
