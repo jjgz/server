@@ -27,6 +27,8 @@ enum Netmessage {
         #[serde(rename = "numJSONResponsesSent")]
         num_json_responses_sent: u32,
     },
+    Heartbeat,
+    RequestNetstats,
     AdcReading {
         reading: u32,
     },
@@ -71,14 +73,16 @@ impl Message {
         Message { buffer: Vec::new() }
     }
 
-    fn add_byte(&mut self, byte: u8) {
-        self.buffer.push(byte);
-    }
-
     fn append<I>(&mut self, i: I)
         where I: IntoIterator<Item = u8>
     {
         self.buffer.extend(i);
+    }
+
+    fn add_message(&mut self, message: &Netmessage) {
+        let s = serde_json::to_string(message)
+            .unwrap_or_else(|e| panic!("Failed to serialize JSON: {}", e));
+        self.append(s.bytes());
     }
 
     fn finish(mut self) -> Result<Vec<u8>, MessageError> {
@@ -143,7 +147,7 @@ fn main() {
 
         // Create the heartbeat message.
         let mut message = Message::new();
-        message.add_byte(0xAA);
+        message.add_message(&Netmessage::Heartbeat);
         let heartbeat = match message.finish() {
             Ok(v) => v,
             Err(e) => panic!("Failed to create heartbeat message: {:?}", e),
