@@ -32,6 +32,8 @@ enum Netmessage {
     AdcReading {
         reading: u32,
     },
+    ConfirmGrabberGrabbing,
+    ConfirmGrabberLifting,
 }
 
 struct Crc8 {
@@ -166,7 +168,7 @@ fn main() {
         message.add_message(&Netmessage::Heartbeat);
         let heartbeat = match message.finish() {
             Ok(v) => v,
-            Err(e) => panic!("Failed to create heartbeat message: {:?}", e),
+            Err(e) => panic!("Failed to create Heartbeat message: {:?}", e),
         };
 
         // Create the RequestNetstats message.
@@ -174,7 +176,15 @@ fn main() {
         message.add_message(&Netmessage::RequestNetstats);
         let request_netstats = match message.finish() {
             Ok(v) => v,
-            Err(e) => panic!("Failed to create heartbeat message: {:?}", e),
+            Err(e) => panic!("Failed to create RequestNetstats message: {:?}", e),
+        };
+
+        // Create the ConfirmGrabberGrabbing message.
+        let mut message = Message::new();
+        message.add_message(&Netmessage::ConfirmGrabberGrabbing);
+        let confirm_grabber_grabbing = match message.finish() {
+            Ok(v) => v,
+            Err(e) => panic!("Failed to create ConfirmGrabberGrabbing message: {:?}", e),
         };
 
         println!("##################");
@@ -192,6 +202,8 @@ fn main() {
                 prev_heartbeat = currtime;
                 // Send Heartbeat.
                 stream.write_all(&heartbeat[..])
+                    .unwrap_or_else(|e| panic!("Failed to send Heartbeat: {}", e));
+                stream.write_all(&confirm_grabber_grabbing[..])
                     .unwrap_or_else(|e| panic!("Failed to send Heartbeat: {}", e));
             }
             if currtime - prev_request_netstats > time::Duration::from_secs(5) {
