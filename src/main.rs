@@ -158,12 +158,21 @@ fn main() {
         });
 
         // Create the time.
-        let mut prevtime = time::Instant::now();
+        let mut prev_heartbeat = time::Instant::now();
+        let mut prev_request_netstats = time::Instant::now();
 
-        // Create the heartbeat message.
+        // Create the Heartbeat message.
+        let mut message = Message::new();
+        message.add_message(&Netmessage::Heartbeat);
+        let heartbeat = match message.finish() {
+            Ok(v) => v,
+            Err(e) => panic!("Failed to create heartbeat message: {:?}", e),
+        };
+
+        // Create the RequestNetstats message.
         let mut message = Message::new();
         message.add_message(&Netmessage::RequestNetstats);
-        let heartbeat = match message.finish() {
+        let request_netstats = match message.finish() {
             Ok(v) => v,
             Err(e) => panic!("Failed to create heartbeat message: {:?}", e),
         };
@@ -179,11 +188,17 @@ fn main() {
                 Err(TryRecvError::Disconnected) => panic!("Receiver disconnected."),
             }
             let currtime = time::Instant::now();
-            if currtime - prevtime > time::Duration::from_secs(1) {
-                prevtime = currtime;
-                // Send heartbeat.
+            if currtime - prev_heartbeat > time::Duration::from_secs(1) {
+                prev_heartbeat = currtime;
+                // Send Heartbeat.
                 stream.write_all(&heartbeat[..])
-                    .unwrap_or_else(|e| panic!("Failed to send heartbeat: {}", e));
+                    .unwrap_or_else(|e| panic!("Failed to send Heartbeat: {}", e));
+            }
+            if currtime - prev_request_netstats > time::Duration::from_secs(5) {
+                prev_request_netstats = currtime;
+                // Send RequestNetstats.
+                stream.write_all(&request_netstats[..])
+                    .unwrap_or_else(|e| panic!("Failed to send RequestNetstats: {}", e));
             }
         }
     }
