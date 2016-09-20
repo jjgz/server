@@ -113,6 +113,21 @@ fn main() {
     use std::net::{TcpListener, TcpStream};
     use std::thread;
 
+    // let mut message = Message::new();
+    // message.add_message(&Netmessage::Netstats {
+    // my_name: String::from("blah"),
+    // num_good_messages_recved: 0,
+    // num_comm_errors: 0,
+    // num_json_requests_recved: 0,
+    // num_json_responses_recved: 0,
+    // num_json_requests_sent: 0,
+    // num_json_responses_sent: 0,
+    // });
+    // let heartbeat = match message.finish() {
+    // Ok(v) => v,
+    // Err(e) => panic!("Failed to create heartbeat message: {:?}", e),
+    // };
+
     let listener = TcpListener::bind("192.168.43.1:2000").unwrap();
 
     fn handle_client(mut stream: TcpStream) {
@@ -147,7 +162,7 @@ fn main() {
 
         // Create the heartbeat message.
         let mut message = Message::new();
-        message.add_message(&Netmessage::Heartbeat);
+        message.add_message(&Netmessage::RequestNetstats);
         let heartbeat = match message.finish() {
             Ok(v) => v,
             Err(e) => panic!("Failed to create heartbeat message: {:?}", e),
