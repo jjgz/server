@@ -11,6 +11,11 @@ use std::time;
 #[derive(Debug, Deserialize, Serialize)]
 #[allow(non_snake_case)]
 enum Netmessage {
+    ReqName,
+    NameJosh,
+    NameGeordon,
+    NameZach,
+    NameJoe,
     Netstats {
         #[serde(rename = "myName")]
         my_name: String,
@@ -29,23 +34,7 @@ enum Netmessage {
     },
     Heartbeat,
     RequestNetstats,
-    AdcReading {
-        reading: u32,
-    },
-    ConfirmGrabberGrabbing,
-    ConfirmGrabberLifting,
-    ConfirmGrabberGrabbed,
-    ConfirmGrabberLifted,
-    Path {
-        points: Vec<[f32; 2]>,
-    },
-    Stop,
-    StopAck,
-    RotationTick,
-    UltraSensor {
-        reading: u32,
-    },
-    GrabberPathAndGrabFinish,
+    AdcReading { reading: u32 },
 }
 
 struct Crc8 {
