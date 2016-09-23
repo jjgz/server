@@ -3,10 +3,12 @@
 
 extern crate serde;
 extern crate serde_json;
+extern crate crossbeam;
 
 use std::io::{Read, Write};
-use std::sync::mpsc::{channel, TryRecvError};
+use std::sync::mpsc::{channel, TryRecvError, Sender};
 use std::time;
+use std::sync::{Mutex, Arc};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[allow(non_snake_case)]
@@ -116,24 +118,18 @@ fn main() {
     use std::net::{TcpListener, TcpStream};
     use std::thread;
 
-    // let mut message = Message::new();
-    // message.add_message(&Netmessage::Netstats {
-    // my_name: String::from("blah"),
-    // num_good_messages_recved: 0,
-    // num_comm_errors: 0,
-    // num_json_requests_recved: 0,
-    // num_json_responses_recved: 0,
-    // num_json_requests_sent: 0,
-    // num_json_responses_sent: 0,
-    // });
-    // let heartbeat = match message.finish() {
-    // Ok(v) => v,
-    // Err(e) => panic!("Failed to create heartbeat message: {:?}", e),
-    // };
+    let geordon_sender = Arc::new(Mutex::new(None));
+    let josh_sender = Arc::new(Mutex::new(None));
+    let joe_sender = Arc::new(Mutex::new(None));
+    let zach_sender = Arc::new(Mutex::new(None));
 
-    let listener = TcpListener::bind("192.168.43.1:2000").unwrap();
+    type PSender = Arc<Mutex<Option<Sender<Netmessage>>>>;
 
-    fn handle_client(mut stream: TcpStream) {
+    fn handle_client(mut stream: TcpStream,
+                     geordon_sender: PSender,
+                     josh_sender: PSender,
+                     joe_sender: PSender,
+                     zach_sender: PSender) {
         println!("New connection.");
 
         // The Wifly always sends this 7-byte sequence on connection.
@@ -156,13 +152,10 @@ fn main() {
         // Perform the JSON reading in a separate thread.
         thread::spawn(move || {
             for nmessage in json_iter {
-                sender.send(nmessage).unwrap_or_else(|e| panic!("Failed to send nmessage: {}", e));
+                sender.send(nmessage)
+                    .unwrap_or_else(|e| panic!("Failed to send nmessage: {}", e));
             }
         });
-
-        // Create the time.
-        let mut prev_heartbeat = time::Instant::now();
-        let mut prev_request_netstats = time::Instant::now();
 
         // Create the Heartbeat message.
         let mut message = Message::new();
@@ -182,18 +175,68 @@ fn main() {
 
         // Create the screwed up message.
         let mut message = Message::new();
-        message.append(['b' as u8, 'l' as u8, 'a' as u8].iter().cloned());
-        let screwed_up = match message.finish() {
+        message.add_message(&Netmessage::ReqName);
+        let request_name = match message.finish() {
             Ok(v) => v,
             Err(e) => panic!("Failed to create screwed up message: {:?}", e),
         };
 
         println!("##################");
 
+        // Create the time.
+        let mut prev_heartbeat = time::Instant::now();
+        let mut prev_request_netstats = time::Instant::now();
+        let mut prev_req_name = time::Instant::now();
+
+        let mut self_receiver = None;
+        let mut self_name = None;
+
         loop {
             // Perform a non-blocking read from the stream.
             match receiver.try_recv() {
-                Ok(Ok(m)) => println!("JSON: {:?}", m),
+                Ok(Ok(m)) => {
+                    match m {
+                        Netmessage::NameGeordon => {
+                            let chan = channel::<Netmessage>();
+                            self_receiver = Some(chan.1);
+                            *geordon_sender.lock().unwrap() = Some(chan.0);
+                            self_name = Some(Netmessage::NameGeordon);
+                            println!("Geordon robot identified.");
+                        }
+                        Netmessage::NameJoe => {
+                            let chan = channel();
+                            self_receiver = Some(chan.1);
+                            *joe_sender.lock().unwrap() = Some(chan.0);
+                            self_name = Some(Netmessage::NameJoe);
+                            println!("Joe robot identified.");
+                        }
+                        Netmessage::NameJosh => {
+                            let chan = channel();
+                            self_receiver = Some(chan.1);
+                            *josh_sender.lock().unwrap() = Some(chan.0);
+                            self_name = Some(Netmessage::NameJosh);
+                            println!("It's Josh bitch.");
+                        }
+                        Netmessage::NameZach => {
+                            let chan = channel();
+                            self_receiver = Some(chan.1);
+                            *zach_sender.lock().unwrap() = Some(chan.0);
+                            self_name = Some(Netmessage::NameZach);
+                            println!("Zach robot identified.");
+                        }
+                        m => {
+                            println!("{}: {:?}",
+                                     match self_name {
+                                         Some(Netmessage::NameGeordon) => "Geordon",
+                                         Some(Netmessage::NameJoe) => "Joe",
+                                         Some(Netmessage::NameJosh) => "Josh",
+                                         Some(Netmessage::NameZach) => "Zach",
+                                         _ => "Unnamed",
+                                     },
+                                     m);
+                        }
+                    }
+                }
                 Ok(Err(e)) => panic!("Closing: Got invalid JSON: {}", e),
                 Err(TryRecvError::Empty) => {}
                 Err(TryRecvError::Disconnected) => panic!("Receiver disconnected."),
@@ -204,8 +247,6 @@ fn main() {
                 // Send Heartbeat.
                 stream.write_all(&heartbeat[..])
                     .unwrap_or_else(|e| panic!("Failed to send Heartbeat: {}", e));
-                stream.write_all(&screwed_up[..])
-                    .unwrap_or_else(|e| panic!("Failed to send screwed up message: {}", e));
             }
             if currtime - prev_request_netstats > time::Duration::from_secs(5) {
                 prev_request_netstats = currtime;
@@ -213,14 +254,29 @@ fn main() {
                 stream.write_all(&request_netstats[..])
                     .unwrap_or_else(|e| panic!("Failed to send RequestNetstats: {}", e));
             }
+            if currtime - prev_req_name > time::Duration::from_millis(100) {
+                prev_req_name = currtime;
+                // Send RequestNetstats.
+                stream.write_all(&request_name[..])
+                    .unwrap_or_else(|e| panic!("Failed to send ReqName: {}", e));
+            }
         }
-    }
+    };
+
+    let listener = TcpListener::bind("192.168.43.1:2000").unwrap();
 
     // Accept connections and process them, spawning a new thread for each one.
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                thread::spawn(move || handle_client(stream));
+                let (geordon_sender, josh_sender, joe_sender, zach_sender) =
+                    (geordon_sender.clone(),
+                     josh_sender.clone(),
+                     joe_sender.clone(),
+                     zach_sender.clone());
+                thread::spawn(move || {
+                    handle_client(stream, geordon_sender, josh_sender, joe_sender, zach_sender)
+                });
             }
             Err(e) => {
                 println!("Lost socket listener: {}", e);
