@@ -254,7 +254,8 @@ fn main() {
                 stream.write_all(&request_netstats[..])
                     .unwrap_or_else(|e| panic!("Failed to send RequestNetstats: {}", e));
             }
-            if currtime - prev_req_name > time::Duration::from_millis(100) {
+            if self_receiver.is_none() &&
+               currtime - prev_req_name > time::Duration::from_millis(100) {
                 prev_req_name = currtime;
                 // Send RequestNetstats.
                 stream.write_all(&request_name[..])
