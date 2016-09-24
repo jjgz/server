@@ -39,6 +39,18 @@ enum Netmessage {
     AdcReading { reading: u32 },
 }
 
+impl Netmessage {
+    fn bot_name(&self) -> String {
+        String::from(match *self {
+            Netmessage::NameGeordon => "Geordon",
+            Netmessage::NameJoe => "Joe",
+            Netmessage::NameJosh => "Josh",
+            Netmessage::NameZach => "Zach",
+            _ => "Unnamed",
+        })
+    }
+}
+
 struct Crc8 {
     crc: u16,
 }
@@ -216,13 +228,9 @@ fn main() {
                         }
                         m => {
                             println!("{}: {:?}",
-                                     match self_name {
-                                         Some(Netmessage::NameGeordon) => "Geordon",
-                                         Some(Netmessage::NameJoe) => "Joe",
-                                         Some(Netmessage::NameJosh) => "Josh",
-                                         Some(Netmessage::NameZach) => "Zach",
-                                         _ => "Unnamed",
-                                     },
+                                     self_name.as_ref()
+                                         .map(|o| o.bot_name())
+                                         .unwrap_or(String::from("Unnamed")),
                                      m);
                         }
                     }
