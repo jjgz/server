@@ -265,7 +265,7 @@ fn main() {
                     .unwrap_or_else(|e| panic!("Failed to send ReqName: {}", e));
             }
         }
-    };
+    }
 
     let listener = TcpListener::bind("192.168.43.1:2000").unwrap();
 
