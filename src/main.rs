@@ -3,7 +3,6 @@
 
 extern crate serde;
 extern crate serde_json;
-extern crate crossbeam;
 
 use std::io::{Read, Write};
 use std::sync::mpsc::{channel, TryRecvError, Sender};
