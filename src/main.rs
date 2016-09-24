@@ -78,6 +78,13 @@ impl Message {
         Message { buffer: Vec::new() }
     }
 
+    fn from_netmessage(nm: &Netmessage) -> Vec<u8> {
+        let mut message = Message::new();
+        message.add_message(nm);
+        message.finish()
+            .expect(&format!("Error: Failed to create message from netmessage: {:?}", nm))
+    }
+
     fn append<I>(&mut self, i: I)
         where I: IntoIterator<Item = u8>
     {
@@ -158,28 +165,11 @@ fn main() {
         });
 
         // Create the Heartbeat message.
-        let mut message = Message::new();
-        message.add_message(&Netmessage::Heartbeat);
-        let heartbeat = match message.finish() {
-            Ok(v) => v,
-            Err(e) => panic!("Failed to create Heartbeat message: {:?}", e),
-        };
-
+        let heartbeat = Message::from_netmessage(&Netmessage::Heartbeat);
         // Create the RequestNetstats message.
-        let mut message = Message::new();
-        message.add_message(&Netmessage::RequestNetstats);
-        let request_netstats = match message.finish() {
-            Ok(v) => v,
-            Err(e) => panic!("Failed to create RequestNetstats message: {:?}", e),
-        };
-
-        // Create the screwed up message.
-        let mut message = Message::new();
-        message.add_message(&Netmessage::ReqName);
-        let request_name = match message.finish() {
-            Ok(v) => v,
-            Err(e) => panic!("Failed to create screwed up message: {:?}", e),
-        };
+        let request_netstats = Message::from_netmessage(&Netmessage::RequestNetstats);
+        // Create the RequestName message.
+        let request_name = Message::from_netmessage(&Netmessage::ReqName);
 
         println!("##################");
 
@@ -240,6 +230,19 @@ fn main() {
                 Ok(Err(e)) => panic!("Closing: Got invalid JSON: {}", e),
                 Err(TryRecvError::Empty) => {}
                 Err(TryRecvError::Disconnected) => panic!("Receiver disconnected."),
+            }
+            // Perform a non-blocking read from the stream.
+            if let Some(ref sr) = self_receiver {
+                match sr.try_recv() {
+                    Ok(m) => {
+                        stream.write_all(&Message::from_netmessage(&m)[..])
+                            .unwrap_or_else(|e| {
+                                panic!("Failed to route message from other bot: {}", e)
+                            });
+                    }
+                    Err(TryRecvError::Empty) => {}
+                    Err(TryRecvError::Disconnected) => panic!("Self receiver disconnected."),
+                }
             }
             let currtime = time::Instant::now();
             if currtime - prev_heartbeat > time::Duration::from_secs(1) {
