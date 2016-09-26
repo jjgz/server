@@ -36,6 +36,8 @@ enum Netmessage {
     Heartbeat,
     RequestNetstats,
     AdcReading { reading: u32 },
+    RequestAHelloFromGeordonToJosh,
+    HelloJosh,
 }
 
 impl Netmessage {
@@ -224,6 +226,32 @@ fn main() {
                             *zach_sender.lock().unwrap() = Some(chan.0);
                             self_name = Some(Netmessage::NameZach);
                             println!("Zach robot identified.");
+                        }
+                        m @ Netmessage::RequestAHelloFromGeordonToJosh => {
+                            match *geordon_sender.lock().unwrap() {
+                                Some(ref c) => {
+                                    c.send(m)
+                                        .expect("Error: Failed to send over disconnected Geordon \
+                                                 channel.");
+                                }
+                                None => {
+                                    println!("Warning: Attempted to send a request to Geordon \
+                                              before he connected.");
+                                }
+                            }
+                        }
+                        m @ Netmessage::HelloJosh => {
+                            match *josh_sender.lock().unwrap() {
+                                Some(ref c) => {
+                                    c.send(m)
+                                        .expect("Error: Failed to send over disconnected Josh \
+                                                 channel.");
+                                }
+                                None => {
+                                    println!("Warning: Attempted to send a request to Josh \
+                                              before he connected.");
+                                }
+                            }
                         }
                         m => {
                             println!("{}: {:?}",
