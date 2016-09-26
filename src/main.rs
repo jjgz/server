@@ -9,7 +9,7 @@ use std::sync::mpsc::{channel, TryRecvError, Sender};
 use std::time;
 use std::sync::{Mutex, Arc};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[allow(non_snake_case)]
 enum Netmessage {
     ReqName,
@@ -134,6 +134,27 @@ impl Message {
     }
 }
 
+type PSender = Arc<Mutex<Option<Sender<Netmessage>>>>;
+
+fn route_message(ps: &PSender, m: Netmessage) {
+    match *ps.lock().unwrap() {
+        Some(ref c) => {
+            match c.send(m.clone()) {
+                Ok(_) => {}
+                Err(e) => {
+                    println!("Error: Failed to send message on disconnected channel: {}",
+                             e);
+                    println!("Message: {:?}", m);
+                }
+            }
+        }
+        None => {
+            println!("Warning: Attempted to send a request before the module connected.");
+            println!("Message: {:?}", m);
+        }
+    }
+}
+
 fn main() {
     use std::net::{TcpListener, TcpStream};
     use std::thread;
@@ -142,8 +163,6 @@ fn main() {
     let josh_sender = Arc::new(Mutex::new(None));
     let joe_sender = Arc::new(Mutex::new(None));
     let zach_sender = Arc::new(Mutex::new(None));
-
-    type PSender = Arc<Mutex<Option<Sender<Netmessage>>>>;
 
     fn handle_client(mut stream: TcpStream,
                      geordon_sender: PSender,
@@ -228,30 +247,10 @@ fn main() {
                             println!("Zach robot identified.");
                         }
                         m @ Netmessage::RequestAHelloFromGeordonToJosh => {
-                            match *geordon_sender.lock().unwrap() {
-                                Some(ref c) => {
-                                    c.send(m)
-                                        .expect("Error: Failed to send over disconnected Geordon \
-                                                 channel.");
-                                }
-                                None => {
-                                    println!("Warning: Attempted to send a request to Geordon \
-                                              before he connected.");
-                                }
-                            }
+                            route_message(&geordon_sender, m);
                         }
                         m @ Netmessage::HelloJosh => {
-                            match *josh_sender.lock().unwrap() {
-                                Some(ref c) => {
-                                    c.send(m)
-                                        .expect("Error: Failed to send over disconnected Josh \
-                                                 channel.");
-                                }
-                                None => {
-                                    println!("Warning: Attempted to send a request to Josh \
-                                              before he connected.");
-                                }
-                            }
+                            route_message(&josh_sender, m);
                         }
                         m => {
                             println!("{}: {:?}",
