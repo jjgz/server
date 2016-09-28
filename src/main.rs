@@ -36,8 +36,117 @@ enum Netmessage {
     Heartbeat,
     RequestNetstats,
     AdcReading { reading: u32 },
-    RequestAHelloFromGeordonToJosh,
-    HelloJosh,
+    /// Always requested by Geordon; the tick sent is the oldest tick for which movement is unknown.
+    ReqJoeMovement(u32),
+    /// Sends the movement data for the tick requested.
+    JoeMovement { tick: u32, mov: f32, turn: f32 },
+    /// Always requested by Geordon; the tick sent is the oldest tick for which movement is unknown.
+    ReqJoshMovement(u32),
+    /// Sends the movement data for the tick requested.
+    JoshMovement { tick: u32, mov: f32, turn: f32 },
+    /// Always requested by Zach.
+    ReqStopped,
+    /// Always sent by Josh.
+    Stopped(u32),
+    /// Sent to Zach.
+    GeoReqGrabbed,
+    /// Send to Geordon.
+    GrabbedGeo(bool),
+    /// Sent to Zach.
+    JoshReqGrabbed,
+    /// Send to Josh.
+    GrabbedJosh(bool),
+    JoshReqWorld,
+    WallJosh {
+        /// This unique ID specifies which previous line to replace.
+        uid: u32,
+        x: f32,
+        y: f32,
+        sx: f32,
+        sy: f32,
+        /// If it is open, then it doesn't necessarily end there.
+        xopen: bool,
+        /// If it is open, then it doesn't necessarily end there.
+        yopen: bool,
+    },
+    BarrierJosh {
+        /// This unique ID specifies which previous line to replace.
+        uid: u32,
+        x: f32,
+        y: f32,
+        sx: f32,
+        sy: f32,
+        /// If it is open, then it doesn't necessarily end there.
+        xopen: bool,
+        /// If it is open, then it doesn't necessarily end there.
+        yopen: bool,
+    },
+    EdgeJosh {
+        /// This unique ID specifies which previous line to replace.
+        uid: u32,
+        x: f32,
+        y: f32,
+    },
+    WallJoe {
+        /// This unique ID specifies which previous line to replace.
+        uid: u32,
+        x: f32,
+        y: f32,
+        sx: f32,
+        sy: f32,
+        /// If it is open, then it doesn't necessarily end there.
+        xopen: bool,
+        /// If it is open, then it doesn't necessarily end there.
+        yopen: bool,
+    },
+    BarrierJoe {
+        /// This unique ID specifies which previous line to replace.
+        uid: u32,
+        x: f32,
+        y: f32,
+        sx: f32,
+        sy: f32,
+        /// If it is open, then it doesn't necessarily end there.
+        xopen: bool,
+        /// If it is open, then it doesn't necessarily end there.
+        yopen: bool,
+    },
+    EdgeJoe {
+        /// This unique ID specifies which previous line to replace.
+        uid: u32,
+        x: f32,
+        y: f32,
+    },
+    WallZach {
+        /// This unique ID specifies which previous line to replace.
+        uid: u32,
+        x: f32,
+        y: f32,
+        sx: f32,
+        sy: f32,
+        /// If it is open, then it doesn't necessarily end there.
+        xopen: bool,
+        /// If it is open, then it doesn't necessarily end there.
+        yopen: bool,
+    },
+    BarrierZach {
+        /// This unique ID specifies which previous line to replace.
+        uid: u32,
+        x: f32,
+        y: f32,
+        sx: f32,
+        sy: f32,
+        /// If it is open, then it doesn't necessarily end there.
+        xopen: bool,
+        /// If it is open, then it doesn't necessarily end there.
+        yopen: bool,
+    },
+    EdgeZach {
+        /// This unique ID specifies which previous line to replace.
+        uid: u32,
+        x: f32,
+        y: f32,
+    },
 }
 
 impl Netmessage {
@@ -246,12 +355,12 @@ fn main() {
                             self_name = Some(Netmessage::NameZach);
                             println!("Zach robot identified.");
                         }
-                        m @ Netmessage::RequestAHelloFromGeordonToJosh => {
-                            route_message(&geordon_sender, m);
-                        }
-                        m @ Netmessage::HelloJosh => {
-                            route_message(&josh_sender, m);
-                        }
+                        // m @ Netmessage::RequestAHelloFromGeordonToJosh => {
+                        // route_message(&geordon_sender, m);
+                        // }
+                        // m @ Netmessage::HelloJosh => {
+                        // route_message(&josh_sender, m);
+                        // }
                         m => {
                             println!("{}: {:?}",
                                      self_name.as_ref()
