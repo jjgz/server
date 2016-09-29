@@ -34,7 +34,7 @@ enum Netmessage {
         num_json_responses_sent: u32,
     },
     Heartbeat,
-    RequestNetstats,
+    ReqNetstats,
     /// Always requested by Geordon; the tick sent is the oldest tick for which movement is unknown.
     ReqJoeMovement(u32),
     /// Sends the movement data for the tick requested.
@@ -309,7 +309,7 @@ fn main() {
         // Create the Heartbeat message.
         let heartbeat = Message::from_netmessage(&Netmessage::Heartbeat);
         // Create the RequestNetstats message.
-        let request_netstats = Message::from_netmessage(&Netmessage::RequestNetstats);
+        let request_netstats = Message::from_netmessage(&Netmessage::ReqNetstats);
         // Create the RequestName message.
         let request_name = Message::from_netmessage(&Netmessage::ReqName);
 
