@@ -35,7 +35,6 @@ enum Netmessage {
     },
     Heartbeat,
     RequestNetstats,
-    AdcReading { reading: u32 },
     /// Always requested by Geordon; the tick sent is the oldest tick for which movement is unknown.
     ReqJoeMovement(u32),
     /// Sends the movement data for the tick requested.
@@ -87,6 +86,7 @@ enum Netmessage {
         x: f32,
         y: f32,
     },
+    JoeReqWorld,
     WallJoe {
         /// This unique ID specifies which previous line to replace.
         uid: u32,
@@ -117,6 +117,7 @@ enum Netmessage {
         x: f32,
         y: f32,
     },
+    ZachReqWorld,
     WallZach {
         /// This unique ID specifies which previous line to replace.
         uid: u32,
@@ -355,12 +356,36 @@ fn main() {
                             self_name = Some(Netmessage::NameZach);
                             println!("Zach robot identified.");
                         }
-                        // m @ Netmessage::RequestAHelloFromGeordonToJosh => {
-                        // route_message(&geordon_sender, m);
-                        // }
-                        // m @ Netmessage::HelloJosh => {
-                        // route_message(&josh_sender, m);
-                        // }
+                        m @ Netmessage::ReqJoeMovement(..) |
+                        m @ Netmessage::WallJoe { .. } |
+                        m @ Netmessage::BarrierJoe { .. } |
+                        m @ Netmessage::EdgeJoe { .. } => {
+                            route_message(&joe_sender, m);
+                        }
+                        m @ Netmessage::ReqJoshMovement(..) |
+                        m @ Netmessage::ReqStopped |
+                        m @ Netmessage::GrabbedJosh(..) |
+                        m @ Netmessage::WallJosh { .. } |
+                        m @ Netmessage::BarrierJosh { .. } |
+                        m @ Netmessage::EdgeJosh { .. } => {
+                            route_message(&josh_sender, m);
+                        }
+                        m @ Netmessage::JoeMovement { .. } |
+                        m @ Netmessage::JoshMovement { .. } |
+                        m @ Netmessage::GrabbedGeo(..) |
+                        m @ Netmessage::JoshReqWorld |
+                        m @ Netmessage::JoeReqWorld |
+                        m @ Netmessage::ZachReqWorld => {
+                            route_message(&geordon_sender, m);
+                        }
+                        m @ Netmessage::GeoReqGrabbed |
+                        m @ Netmessage::JoshReqGrabbed |
+                        m @ Netmessage::Stopped(..) |
+                        m @ Netmessage::WallZach { .. } |
+                        m @ Netmessage::BarrierZach { .. } |
+                        m @ Netmessage::EdgeZach { .. } => {
+                            route_message(&zach_sender, m);
+                        }
                         m => {
                             println!("{}: {:?}",
                                      self_name.as_ref()
