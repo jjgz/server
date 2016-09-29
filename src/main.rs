@@ -55,6 +55,10 @@ enum Netmessage {
     JoshReqGrabbed,
     /// Send to Josh.
     GrabbedJosh(bool),
+    /// Send to Josh.
+    ReqStarted,
+    /// Send to Zach.
+    Started(bool),
     JoshReqWorld,
     WallJosh {
         /// This unique ID specifies which previous line to replace.
@@ -359,7 +363,8 @@ fn main() {
                         m @ Netmessage::ReqJoeMovement(..) |
                         m @ Netmessage::WallJoe { .. } |
                         m @ Netmessage::BarrierJoe { .. } |
-                        m @ Netmessage::EdgeJoe { .. } => {
+                        m @ Netmessage::EdgeJoe { .. } |
+                        m @ Netmessage::Started(..) => {
                             route_message(&joe_sender, m);
                         }
                         m @ Netmessage::ReqJoshMovement(..) |
@@ -367,7 +372,8 @@ fn main() {
                         m @ Netmessage::GrabbedJosh(..) |
                         m @ Netmessage::WallJosh { .. } |
                         m @ Netmessage::BarrierJosh { .. } |
-                        m @ Netmessage::EdgeJosh { .. } => {
+                        m @ Netmessage::EdgeJosh { .. } |
+                        m @ Netmessage::ReqStarted => {
                             route_message(&josh_sender, m);
                         }
                         m @ Netmessage::JoeMovement { .. } |
