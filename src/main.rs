@@ -152,6 +152,37 @@ enum Netmessage {
         x: f32,
         y: f32,
     },
+    SrvReqWorld,
+    WallSrv {
+        /// This unique ID specifies which previous line to replace.
+        uid: u32,
+        x: f32,
+        y: f32,
+        sx: f32,
+        sy: f32,
+        /// If it is open, then it doesn't necessarily end there.
+        xopen: bool,
+        /// If it is open, then it doesn't necessarily end there.
+        yopen: bool,
+    },
+    BarrierSrv {
+        /// This unique ID specifies which previous line to replace.
+        uid: u32,
+        x: f32,
+        y: f32,
+        sx: f32,
+        sy: f32,
+        /// If it is open, then it doesn't necessarily end there.
+        xopen: bool,
+        /// If it is open, then it doesn't necessarily end there.
+        yopen: bool,
+    },
+    EdgeSrv {
+        /// This unique ID specifies which previous line to replace.
+        uid: u32,
+        x: f32,
+        y: f32,
+    },
 }
 
 impl Netmessage {
