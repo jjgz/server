@@ -8,7 +8,7 @@ use std::net::TcpStream;
 
 use serde_json;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct ProbabilityPoint {
     /// This is in meters.
     pub x: f32,
@@ -20,7 +20,7 @@ pub struct ProbabilityPoint {
     pub open: bool,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub enum WorldPiece {
     Total(u32),
     ArenaBorder {
@@ -40,13 +40,13 @@ pub enum WorldPiece {
     RoverB(ProbabilityPoint),
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct World {
     pub frame: u32,
     pub piece: WorldPiece,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub enum Netmessage {
     ReqName,
     NameJosh,
@@ -368,9 +368,14 @@ pub fn handle_client(mut stream: TcpStream,
             // Send Heartbeat.
             stream.write_all(&heartbeat[..])
                 .unwrap_or_else(|e| panic!("Failed to send Heartbeat: {}", e));
-            // Send SrvReqWorld.
-            stream.write_all(&serv_req_world[..])
-                .unwrap_or_else(|e| panic!("Failed to send SrvReqWorld: {}", e));
+            // Only send SrvReqWorld to Geordon.
+            if let Some(ref n) = self_name {
+                if *n == Netmessage::NameGeordon {
+                    // Send SrvReqWorld.
+                    stream.write_all(&serv_req_world[..])
+                        .unwrap_or_else(|e| panic!("Failed to send SrvReqWorld: {}", e));
+                }
+            }
         }
         if currtime - prev_request_netstats > time::Duration::from_secs(5) {
             prev_request_netstats = currtime;
