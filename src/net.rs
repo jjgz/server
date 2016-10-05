@@ -255,6 +255,8 @@ pub fn handle_client(mut stream: TcpStream,
 
     // Create the Heartbeat message.
     let heartbeat = Message::from_netmessage(&Netmessage::Heartbeat);
+    // Create the SrvReqWorld message.
+    let serv_req_world = Message::from_netmessage(&Netmessage::SrvReqWorld);
     // Create the RequestNetstats message.
     let request_netstats = Message::from_netmessage(&Netmessage::ReqNetstats);
     // Create the RequestName message.
@@ -366,6 +368,9 @@ pub fn handle_client(mut stream: TcpStream,
             // Send Heartbeat.
             stream.write_all(&heartbeat[..])
                 .unwrap_or_else(|e| panic!("Failed to send Heartbeat: {}", e));
+            // Send SrvReqWorld.
+            stream.write_all(&serv_req_world[..])
+                .unwrap_or_else(|e| panic!("Failed to send SrvReqWorld: {}", e));
         }
         if currtime - prev_request_netstats > time::Duration::from_secs(5) {
             prev_request_netstats = currtime;
