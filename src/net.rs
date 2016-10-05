@@ -10,15 +10,19 @@ use serde_json;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ProbabilityPoint {
+    /// This is in meters.
     pub x: f32,
+    /// This is in meters.
     pub y: f32,
-    pub vx: f32,
-    pub vy: f32,
+    /// This is a variance in meter squared.
+    pub v: f32,
+    /// If this is true, the point is not the end of this line.
     pub open: bool,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum WorldPiece {
+    Total(u32),
     ArenaBorder {
         p0: ProbabilityPoint,
         p1: ProbabilityPoint,

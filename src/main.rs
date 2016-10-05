@@ -4,19 +4,34 @@
 extern crate serde;
 extern crate serde_json;
 
+extern crate glium;
+extern crate glowygraph;
+
 mod net;
+mod render;
+
 use std::sync::{Mutex, Arc};
+use std::sync::mpsc::channel;
+use std::thread;
+use std::net::TcpListener;
+
+use std::env::args;
 
 fn main() {
-    use std::net::TcpListener;
-    use std::thread;
-
     let geordon_sender = Arc::new(Mutex::new(None));
     let josh_sender = Arc::new(Mutex::new(None));
     let joe_sender = Arc::new(Mutex::new(None));
     let zach_sender = Arc::new(Mutex::new(None));
 
-    let listener = TcpListener::bind("192.168.43.1:2000").unwrap();
+    let (server_sender, server_receiver) = channel();
+
+    let bindaddress = args()
+        .nth(1)
+        .unwrap_or_else(|| panic!("Error: Pass an address in the format \"ip:port\" to bind to."));
+
+    let listener = TcpListener::bind::<&str>(&bindaddress).unwrap();
+
+    thread::spawn(move || render::render(server_receiver));
 
     // Accept connections and process them, spawning a new thread for each one.
     for stream in listener.incoming() {
