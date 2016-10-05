@@ -33,6 +33,17 @@ fn color_line(p0: &net::ProbabilityPoint,
      }]
 }
 
+fn color_point(p: &net::ProbabilityPoint, color: [f32; 4]) -> [glowygraph::render2::Node; 1] {
+    [glowygraph::render2::Node {
+         position: [p.x, p.y],
+         inner_color: color,
+         falloff: 0.1,
+         falloff_color: color,
+         falloff_radius: p.v.sqrt() * 2.0,
+         inner_radius: 0.0,
+     }]
+}
+
 pub fn render(recv: Receiver<net::World>) {
     use glium::DisplayBuild;
     use glowygraph::render2::Renderer;
@@ -102,6 +113,8 @@ pub fn render(recv: Receiver<net::World>) {
         // Use the projection matrix to scale the screen so that
         // y goes from [-1, 1) and x goes from [-hscale, hscale).
         let projection = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+        // Scale dimensions down by 5 times.
+        let modelview = [[1.0 / 5.0 / hscale, 0.0, 0.0], [0.0, 1.0 / 5.0, 0.0], [0.0, 0.0, 1.0]];
 
         // Begin rendering.
         let mut target = display.draw();
@@ -112,12 +125,39 @@ pub fn render(recv: Receiver<net::World>) {
             match *e {
                 net::WorldPiece::ArenaBorder { ref p0, ref p1 } => {
                     glowy.render_edges_round(&mut target,
-                                             // Scale dimensions down by 5 times.
-                                             [[1.0 / 5.0 / hscale, 0.0, 0.0],
-                                              [0.0, 1.0 / 5.0, 0.0],
-                                              [0.0, 0.0, 1.0]],
+                                             modelview,
                                              projection,
                                              &color_line(p0, p1, [1.0, 0.0, 0.0, 1.0]));
+                }
+                net::WorldPiece::VisibilityBorder { ref p0, ref p1 } => {
+                    glowy.render_edges_round(&mut target,
+                                             modelview,
+                                             projection,
+                                             &color_line(p0, p1, [0.0, 0.0, 1.0, 1.0]));
+                }
+                net::WorldPiece::ObjectBorder { ref p0, ref p1 } => {
+                    glowy.render_edges_round(&mut target,
+                                             modelview,
+                                             projection,
+                                             &color_line(p0, p1, [0.0, 1.0, 0.0, 1.0]));
+                }
+                net::WorldPiece::Target(ref p) => {
+                    glowy.render_nodes(&mut target,
+                                       modelview,
+                                       projection,
+                                       &color_point(p, [1.0, 0.0, 0.0, 1.0]));
+                }
+                net::WorldPiece::RoverA(ref p) => {
+                    glowy.render_nodes(&mut target,
+                                       modelview,
+                                       projection,
+                                       &color_point(p, [0.0, 1.0, 0.0, 1.0]));
+                }
+                net::WorldPiece::RoverB(ref p) => {
+                    glowy.render_nodes(&mut target,
+                                       modelview,
+                                       projection,
+                                       &color_point(p, [0.0, 0.0, 1.0, 1.0]));
                 }
                 _ => {}
             }
@@ -126,17 +166,8 @@ pub fn render(recv: Receiver<net::World>) {
         // Vsync, end rendering, and flip buffer.
         target.finish().unwrap();
 
-        for ev in display.poll_events() {
-            use glium::glutin::Event;
-            match ev {
-                Event::Closed => {
-                    if let Some(win) = display.get_window() {
-                        win.hide();
-                    }
-                    return;
-                }
-                _ => {}
-            }
+        // Don't do anything with events, but clear them out.
+        for _ in display.poll_events() {
         }
     }
 }
