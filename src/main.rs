@@ -10,7 +10,40 @@ use std::time;
 use std::sync::{Mutex, Arc};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-#[allow(non_snake_case)]
+struct ProbabilityPoint {
+    x: f32,
+    y: f32,
+    vx: f32,
+    vy: f32,
+    open: bool,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+enum WorldPiece {
+    ArenaBorder {
+        p0: ProbabilityPoint,
+        p1: ProbabilityPoint,
+    },
+    VisibilityBorder {
+        p0: ProbabilityPoint,
+        p1: ProbabilityPoint,
+    },
+    ObjectBorder {
+        p0: ProbabilityPoint,
+        p1: ProbabilityPoint,
+    },
+    Target(ProbabilityPoint),
+    RoverA(ProbabilityPoint),
+    RoverB(ProbabilityPoint),
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+struct World {
+    frame: u32,
+    piece: WorldPiece,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
 enum Netmessage {
     ReqName,
     NameJosh,
@@ -60,129 +93,13 @@ enum Netmessage {
     /// Send to Zach.
     Started(bool),
     JoshReqWorld,
-    WallJosh {
-        /// This unique ID specifies which previous line to replace.
-        uid: u32,
-        x: f32,
-        y: f32,
-        sx: f32,
-        sy: f32,
-        /// If it is open, then it doesn't necessarily end there.
-        xopen: bool,
-        /// If it is open, then it doesn't necessarily end there.
-        yopen: bool,
-    },
-    BarrierJosh {
-        /// This unique ID specifies which previous line to replace.
-        uid: u32,
-        x: f32,
-        y: f32,
-        sx: f32,
-        sy: f32,
-        /// If it is open, then it doesn't necessarily end there.
-        xopen: bool,
-        /// If it is open, then it doesn't necessarily end there.
-        yopen: bool,
-    },
-    EdgeJosh {
-        /// This unique ID specifies which previous line to replace.
-        uid: u32,
-        x: f32,
-        y: f32,
-    },
+    WorldJosh(World),
     JoeReqWorld,
-    WallJoe {
-        /// This unique ID specifies which previous line to replace.
-        uid: u32,
-        x: f32,
-        y: f32,
-        sx: f32,
-        sy: f32,
-        /// If it is open, then it doesn't necessarily end there.
-        xopen: bool,
-        /// If it is open, then it doesn't necessarily end there.
-        yopen: bool,
-    },
-    BarrierJoe {
-        /// This unique ID specifies which previous line to replace.
-        uid: u32,
-        x: f32,
-        y: f32,
-        sx: f32,
-        sy: f32,
-        /// If it is open, then it doesn't necessarily end there.
-        xopen: bool,
-        /// If it is open, then it doesn't necessarily end there.
-        yopen: bool,
-    },
-    EdgeJoe {
-        /// This unique ID specifies which previous line to replace.
-        uid: u32,
-        x: f32,
-        y: f32,
-    },
+    WorldJoe(World),
     ZachReqWorld,
-    WallZach {
-        /// This unique ID specifies which previous line to replace.
-        uid: u32,
-        x: f32,
-        y: f32,
-        sx: f32,
-        sy: f32,
-        /// If it is open, then it doesn't necessarily end there.
-        xopen: bool,
-        /// If it is open, then it doesn't necessarily end there.
-        yopen: bool,
-    },
-    BarrierZach {
-        /// This unique ID specifies which previous line to replace.
-        uid: u32,
-        x: f32,
-        y: f32,
-        sx: f32,
-        sy: f32,
-        /// If it is open, then it doesn't necessarily end there.
-        xopen: bool,
-        /// If it is open, then it doesn't necessarily end there.
-        yopen: bool,
-    },
-    EdgeZach {
-        /// This unique ID specifies which previous line to replace.
-        uid: u32,
-        x: f32,
-        y: f32,
-    },
+    WorldZach(World),
     SrvReqWorld,
-    WallSrv {
-        /// This unique ID specifies which previous line to replace.
-        uid: u32,
-        x: f32,
-        y: f32,
-        sx: f32,
-        sy: f32,
-        /// If it is open, then it doesn't necessarily end there.
-        xopen: bool,
-        /// If it is open, then it doesn't necessarily end there.
-        yopen: bool,
-    },
-    BarrierSrv {
-        /// This unique ID specifies which previous line to replace.
-        uid: u32,
-        x: f32,
-        y: f32,
-        sx: f32,
-        sy: f32,
-        /// If it is open, then it doesn't necessarily end there.
-        xopen: bool,
-        /// If it is open, then it doesn't necessarily end there.
-        yopen: bool,
-    },
-    EdgeSrv {
-        /// This unique ID specifies which previous line to replace.
-        uid: u32,
-        x: f32,
-        y: f32,
-    },
+    WorldSrv(World),
 }
 
 impl Netmessage {
@@ -392,18 +309,14 @@ fn main() {
                             println!("Zach robot identified.");
                         }
                         m @ Netmessage::ReqJoeMovement(..) |
-                        m @ Netmessage::WallJoe { .. } |
-                        m @ Netmessage::BarrierJoe { .. } |
-                        m @ Netmessage::EdgeJoe { .. } |
+                        m @ Netmessage::WorldJoe(..) |
                         m @ Netmessage::Started(..) => {
                             route_message(&joe_sender, m);
                         }
                         m @ Netmessage::ReqJoshMovement(..) |
                         m @ Netmessage::ReqStopped |
                         m @ Netmessage::GrabbedJosh(..) |
-                        m @ Netmessage::WallJosh { .. } |
-                        m @ Netmessage::BarrierJosh { .. } |
-                        m @ Netmessage::EdgeJosh { .. } |
+                        m @ Netmessage::WorldJosh(..) |
                         m @ Netmessage::ReqStarted => {
                             route_message(&josh_sender, m);
                         }
@@ -418,9 +331,7 @@ fn main() {
                         m @ Netmessage::GeoReqGrabbed |
                         m @ Netmessage::JoshReqGrabbed |
                         m @ Netmessage::Stopped(..) |
-                        m @ Netmessage::WallZach { .. } |
-                        m @ Netmessage::BarrierZach { .. } |
-                        m @ Netmessage::EdgeZach { .. } => {
+                        m @ Netmessage::WorldZach(..) => {
                             route_message(&zach_sender, m);
                         }
                         m => {
