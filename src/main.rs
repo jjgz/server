@@ -37,13 +37,19 @@ fn main() {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                let (geordon_sender, josh_sender, joe_sender, zach_sender) =
+                let (geordon_sender, josh_sender, joe_sender, zach_sender, server_sender) =
                     (geordon_sender.clone(),
                      josh_sender.clone(),
                      joe_sender.clone(),
-                     zach_sender.clone());
+                     zach_sender.clone(),
+                     server_sender.clone());
                 thread::spawn(move || {
-                    net::handle_client(stream, geordon_sender, josh_sender, joe_sender, zach_sender)
+                    net::handle_client(stream,
+                                       geordon_sender,
+                                       josh_sender,
+                                       joe_sender,
+                                       zach_sender,
+                                       server_sender);
                 });
             }
             Err(e) => {

@@ -224,7 +224,8 @@ pub fn handle_client(mut stream: TcpStream,
                      geordon_sender: PSender,
                      josh_sender: PSender,
                      joe_sender: PSender,
-                     zach_sender: PSender) {
+                     zach_sender: PSender,
+                     server_sender: Sender<World>) {
     println!("New connection.");
 
     // The Wifly always sends this 7-byte sequence on connection.
@@ -327,6 +328,11 @@ pub fn handle_client(mut stream: TcpStream,
                     m @ Netmessage::Stopped(..) |
                     m @ Netmessage::WorldZach(..) => {
                         route_message(&zach_sender, m);
+                    }
+                    Netmessage::WorldSrv(w) => {
+                        server_sender.send(w).unwrap_or_else(|e| {
+                            panic!("Error: Failed to send world view to server: {}", e)
+                        });
                     }
                     m => {
                         println!("{}: {:?}",
