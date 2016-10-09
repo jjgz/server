@@ -9,25 +9,15 @@ use std::net::TcpStream;
 use serde_json;
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-pub struct ProbabilityPoint {
-    /// This is in meters.
-    pub x: f32,
-    /// This is in meters.
-    pub y: f32,
-    /// This is a variance in meter squared.
-    pub v: f32,
+pub struct EndPoint {
+    pub point: Point,
     /// If this is true, the point is not the end of this line.
     pub open: bool,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct OrientPoint {
-    /// This is in meters.
-    pub x: f32,
-    /// This is in meters.
-    pub y: f32,
-    /// This is a variance in meter squared.
-    pub v: f32,
+    pub point: Point,
     /// This is the angle in radians.
     pub angle: f32,
 }
@@ -46,16 +36,16 @@ pub struct Point {
 pub enum WorldPiece {
     Total(u32),
     ArenaBorder {
-        p0: ProbabilityPoint,
-        p1: ProbabilityPoint,
+        p0: EndPoint,
+        p1: EndPoint,
     },
     VisibilityBorder {
-        p0: ProbabilityPoint,
-        p1: ProbabilityPoint,
+        p0: EndPoint,
+        p1: EndPoint,
     },
     ObjectBorder {
-        p0: ProbabilityPoint,
-        p1: ProbabilityPoint,
+        p0: EndPoint,
+        p1: EndPoint,
     },
     Target(Point),
     RoverA(OrientPoint),

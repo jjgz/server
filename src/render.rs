@@ -13,10 +13,12 @@ struct World {
     pieces: Vec<net::WorldPiece>,
 }
 
-fn color_line(p0: &net::ProbabilityPoint,
-              p1: &net::ProbabilityPoint,
+fn color_line(p0: &net::EndPoint,
+              p1: &net::EndPoint,
               color: [f32; 4])
               -> [glowygraph::render2::Node; 2] {
+    let p0 = &p0.point;
+    let p1 = &p1.point;
     [glowygraph::render2::Node {
          position: [p0.x, p0.y],
          inner_color: color,
@@ -35,7 +37,7 @@ fn color_line(p0: &net::ProbabilityPoint,
      }]
 }
 
-fn color_point(p: &net::ProbabilityPoint, color: [f32; 4]) -> [glowygraph::render2::Node; 1] {
+fn color_point(p: &net::Point, color: [f32; 4]) -> [glowygraph::render2::Node; 1] {
     [glowygraph::render2::Node {
          position: [p.x, p.y],
          inner_color: color,
@@ -57,16 +59,20 @@ pub fn render(recv: Receiver<net::World>) {
         frame: 0,
         total: Some(1),
         pieces: vec![net::WorldPiece::ArenaBorder {
-                         p0: net::ProbabilityPoint {
-                             x: -0.5,
-                             y: -0.5,
-                             v: 0.001,
+                         p0: net::EndPoint {
+                             point: net::Point {
+                                 x: -0.5,
+                                 y: -0.5,
+                                 v: 0.001,
+                             },
                              open: false,
                          },
-                         p1: net::ProbabilityPoint {
-                             x: 0.5,
-                             y: 0.5,
-                             v: 0.001,
+                         p1: net::EndPoint {
+                             point: net::Point {
+                                 x: -0.5,
+                                 y: -0.5,
+                                 v: 0.001,
+                             },
                              open: false,
                          },
                      }],
@@ -153,13 +159,13 @@ pub fn render(recv: Receiver<net::World>) {
                     glowy.render_nodes(&mut target,
                                        modelview,
                                        projection,
-                                       &color_point(p, [0.0, 1.0, 0.0, 1.0]));
+                                       &color_point(&p.point, [0.0, 1.0, 0.0, 1.0]));
                 }
                 net::WorldPiece::RoverB(ref p) => {
                     glowy.render_nodes(&mut target,
                                        modelview,
                                        projection,
-                                       &color_point(p, [0.0, 0.0, 1.0, 1.0]));
+                                       &color_point(&p.point, [0.0, 0.0, 1.0, 1.0]));
                 }
                 _ => {}
             }
