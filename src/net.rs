@@ -21,6 +21,28 @@ pub struct ProbabilityPoint {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct OrientPoint {
+    /// This is in meters.
+    pub x: f32,
+    /// This is in meters.
+    pub y: f32,
+    /// This is a variance in meter squared.
+    pub v: f32,
+    /// This is the angle in radians.
+    pub angle: f32,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct Point {
+    /// This is in meters.
+    pub x: f32,
+    /// This is in meters.
+    pub y: f32,
+    /// This is a variance in meter squared.
+    pub v: f32,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub enum WorldPiece {
     Total(u32),
     ArenaBorder {
@@ -35,9 +57,9 @@ pub enum WorldPiece {
         p0: ProbabilityPoint,
         p1: ProbabilityPoint,
     },
-    Target(ProbabilityPoint),
-    RoverA(ProbabilityPoint),
-    RoverB(ProbabilityPoint),
+    Target(Point),
+    RoverA(OrientPoint),
+    RoverB(OrientPoint),
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]

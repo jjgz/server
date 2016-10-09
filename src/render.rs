@@ -4,6 +4,8 @@ use std::sync::mpsc::{Receiver, TryRecvError};
 use glium;
 use glowygraph;
 
+use serde_json;
+
 #[derive(Debug, Clone, Default)]
 struct World {
     frame: u32,
