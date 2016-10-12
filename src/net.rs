@@ -20,6 +20,8 @@ pub struct OrientPoint {
     pub point: Point,
     /// This is the angle in radians.
     pub angle: f32,
+    /// This is the angle's variance in radians^2.
+    pub av: f32,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -402,4 +404,32 @@ pub fn handle_client(mut stream: TcpStream,
                 .unwrap_or_else(|e| panic!("Failed to send ReqName: {}", e));
         }
     }
+}
+
+#[test]
+fn test_world_json() {
+    use std::io::stderr;
+    writeln!(&mut stderr(), "World json: {}",
+             serde_json::to_string(&Netmessage::WorldJoe(World {
+                 frame: 0,
+                 piece: WorldPiece::ArenaBorder {
+                     p0: EndPoint {
+                         point: Point {
+                             x: -0.5,
+                             y: -0.5,
+                             v: 0.001,
+                         },
+                         open: false,
+                     },
+                     p1: EndPoint {
+                         point: Point {
+                             x: -0.5,
+                             y: -0.5,
+                             v: 0.001,
+                         },
+                         open: false,
+                     },
+                 },
+             }))
+                 .unwrap()).unwrap();
 }
