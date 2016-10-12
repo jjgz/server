@@ -49,7 +49,7 @@ pub enum WorldPiece {
         p0: EndPoint,
         p1: EndPoint,
     },
-    Target(Point),
+    Target(OrientPoint),
     RoverA(OrientPoint),
     RoverB(OrientPoint),
 }

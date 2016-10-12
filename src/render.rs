@@ -151,7 +151,7 @@ pub fn render(recv: Receiver<net::World>) {
                     glowy.render_nodes(&mut target,
                                        modelview,
                                        projection,
-                                       &color_point(p, [1.0, 0.0, 0.0, 1.0]));
+                                       &color_point(&p.point, [1.0, 0.0, 0.0, 1.0]));
                 }
                 net::WorldPiece::RoverA(ref p) => {
                     glowy.render_nodes(&mut target,
