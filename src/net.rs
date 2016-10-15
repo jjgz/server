@@ -415,28 +415,24 @@ pub fn handle_client(mut stream: TcpStream,
 fn test_world_json() {
     use std::io::stderr;
     writeln!(&mut stderr(),
-             "World json: {}",
-             serde_json::to_string(&Netmessage::WorldJoe(World {
-                     frame: 0,
-                     piece: WorldPiece::ArenaBorder {
-                         p0: EndPoint {
-                             point: Point {
-                                 x: -0.5,
-                                 y: -0.5,
-                                 v: 0.001,
-                             },
-                             open: false,
-                         },
-                         p1: EndPoint {
-                             point: Point {
-                                 x: -0.5,
-                                 y: -0.5,
-                                 v: 0.001,
-                             },
-                             open: false,
-                         },
-                     },
-                 }))
+             "ReqMovement json: {}",
+             serde_json::to_string(&Netmessage::ReqMovement)
+                 .unwrap())
+        .unwrap();
+    writeln!(&mut stderr(),
+             "CF json: {}",
+             serde_json::to_string(&Netmessage::CF(457))
+                 .unwrap())
+        .unwrap();
+    writeln!(&mut stderr(),
+             "CF json: {}",
+             serde_json::to_string(&Netmessage::Movement(Point{
+                 x: 1.0,
+                 y: -1.0,
+                 v: 0.1,
+                 angle: 0.2,
+                 av: 0.01,
+             }))
                  .unwrap())
         .unwrap();
 }
