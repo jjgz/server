@@ -425,7 +425,7 @@ fn test_world_json() {
                  .unwrap())
         .unwrap();
     writeln!(&mut stderr(),
-             "CF json: {}",
+             "Movement json: {}",
              serde_json::to_string(&Netmessage::Movement(Point{
                  x: 1.0,
                  y: -1.0,
