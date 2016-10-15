@@ -9,22 +9,6 @@ use std::net::TcpStream;
 use serde_json;
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-pub struct EndPoint {
-    pub point: Point,
-    /// If this is true, the point is not the end of this line.
-    pub open: bool,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-pub struct OrientPoint {
-    pub point: Point,
-    /// This is the angle in radians.
-    pub angle: f32,
-    /// This is the angle's variance in radians^2.
-    pub av: f32,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Point {
     /// This is in meters.
     pub x: f32,
@@ -32,32 +16,10 @@ pub struct Point {
     pub y: f32,
     /// This is a variance in meter squared.
     pub v: f32,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-pub enum WorldPiece {
-    Total(u32),
-    ArenaBorder {
-        p0: EndPoint,
-        p1: EndPoint,
-    },
-    VisibilityBorder {
-        p0: EndPoint,
-        p1: EndPoint,
-    },
-    ObjectBorder {
-        p0: EndPoint,
-        p1: EndPoint,
-    },
-    Target(OrientPoint),
-    RoverA(OrientPoint),
-    RoverB(OrientPoint),
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-pub struct World {
-    pub frame: u32,
-    pub piece: WorldPiece,
+    /// This is the angle in radians.
+    pub angle: f32,
+    /// This is the angle's variance in radians^2.
+    pub av: f32,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -85,38 +47,52 @@ pub enum Netmessage {
     },
     Heartbeat,
     ReqNetstats,
-    /// Always requested by Geordon; the tick sent is the oldest tick for which movement is unknown.
-    ReqJoeMovement(u32),
-    /// Sends the movement data for the tick requested.
-    JoeMovement { tick: u32, mov: f32, turn: f32 },
-    /// Always requested by Geordon; the tick sent is the oldest tick for which movement is unknown.
-    ReqJoshMovement(u32),
-    /// Sends the movement data for the tick requested.
-    JoshMovement { tick: u32, mov: f32, turn: f32 },
-    /// Always requested by Zach.
+    /// Joe
+    ReqMovement,
+    /// Geordon
+    Movement(Point),
+    /// Geordon
+    JoeReqPoints,
+    /// Joe
+    JF(u32),
+    /// Joe
+    JE(u32),
+    /// Geordon
+    JoshReqPoints,
+    /// Josh
+    CF(u32),
+    /// Josh
+    CE(u32),
+    /// Josh
+    CT(u32),
+    /// Geordon
     ReqStopped,
-    /// Always sent by Josh.
-    Stopped(u32),
-    /// Sent to Zach.
-    GeoReqGrabbed,
-    /// Send to Geordon.
-    GrabbedGeo(bool),
-    /// Sent to Zach.
-    JoshReqGrabbed,
-    /// Send to Josh.
-    GrabbedJosh(bool),
-    /// Send to Josh.
-    ReqStarted,
-    /// Send to Zach.
-    Started(bool),
-    JoshReqWorld,
-    WorldJosh(World),
-    JoeReqWorld,
-    WorldJoe(World),
-    ZachReqWorld,
-    WorldZach(World),
-    SrvReqWorld,
-    WorldSrv(World),
+    /// Josh
+    Stopped(bool),
+    /// Josh
+    ReqInPosition,
+    /// Zach
+    InPosition(bool),
+    /// Zach
+    ReqEdgeDetect,
+    /// Josh
+    EdgeDetect(bool),
+    /// Zach
+    ReqEdgeDropped,
+    /// Josh
+    EdgeDropped(bool),
+    /// Zach
+    ReqDistance,
+    /// Josh; Value is in meters.
+    Distance(f64),
+    /// Zach
+    ReqGrabbed,
+    /// Josh
+    Grabbed(bool),
+    /// Zach
+    ReqDropped,
+    /// Josh
+    Dropped(bool),
 }
 
 impl Netmessage {
@@ -238,8 +214,7 @@ pub fn handle_client(mut stream: TcpStream,
                      geordon_sender: PSender,
                      josh_sender: PSender,
                      joe_sender: PSender,
-                     zach_sender: PSender,
-                     server_sender: Sender<World>) {
+                     zach_sender: PSender) {
     println!("New connection.");
 
     // The Wifly always sends this 7-byte sequence on connection.
@@ -269,8 +244,6 @@ pub fn handle_client(mut stream: TcpStream,
 
     // Create the Heartbeat message.
     let heartbeat = Message::from_netmessage(&Netmessage::Heartbeat);
-    // Create the SrvReqWorld message.
-    let serv_req_world = Message::from_netmessage(&Netmessage::SrvReqWorld);
     // Create the RequestNetstats message.
     let request_netstats = Message::from_netmessage(&Netmessage::ReqNetstats);
     // Create the RequestName message.
@@ -319,36 +292,36 @@ pub fn handle_client(mut stream: TcpStream,
                         self_name = Some(Netmessage::NameZach);
                         println!("Zach robot identified.");
                     }
-                    m @ Netmessage::ReqJoeMovement(..) |
-                    m @ Netmessage::WorldJoe(..) |
-                    m @ Netmessage::Started(..) => {
+                    m @ Netmessage::ReqMovement |
+                    m @ Netmessage::JF(..) |
+                    m @ Netmessage::JE(..) => {
                         route_message(&joe_sender, m);
                     }
-                    m @ Netmessage::ReqJoshMovement(..) |
-                    m @ Netmessage::ReqStopped |
-                    m @ Netmessage::GrabbedJosh(..) |
-                    m @ Netmessage::WorldJosh(..) |
-                    m @ Netmessage::ReqStarted => {
+                    m @ Netmessage::CF(..) |
+                    m @ Netmessage::CE(..) |
+                    m @ Netmessage::CT(..) |
+                    m @ Netmessage::Stopped(..) |
+                    m @ Netmessage::ReqInPosition |
+                    m @ Netmessage::EdgeDetect(..) |
+                    m @ Netmessage::EdgeDropped(..) |
+                    m @ Netmessage::Distance(..) |
+                    m @ Netmessage::Grabbed(..) |
+                    m @ Netmessage::Dropped(..) => {
                         route_message(&josh_sender, m);
                     }
-                    m @ Netmessage::JoeMovement { .. } |
-                    m @ Netmessage::JoshMovement { .. } |
-                    m @ Netmessage::GrabbedGeo(..) |
-                    m @ Netmessage::JoshReqWorld |
-                    m @ Netmessage::JoeReqWorld |
-                    m @ Netmessage::ZachReqWorld => {
+                    m @ Netmessage::Movement(..) |
+                    m @ Netmessage::JoeReqPoints |
+                    m @ Netmessage::JoshReqPoints |
+                    m @ Netmessage::ReqStopped => {
                         route_message(&geordon_sender, m);
                     }
-                    m @ Netmessage::GeoReqGrabbed |
-                    m @ Netmessage::JoshReqGrabbed |
-                    m @ Netmessage::Stopped(..) |
-                    m @ Netmessage::WorldZach(..) => {
+                    m @ Netmessage::InPosition(..) |
+                    m @ Netmessage::ReqEdgeDetect |
+                    m @ Netmessage::ReqEdgeDropped |
+                    m @ Netmessage::ReqDistance |
+                    m @ Netmessage::ReqGrabbed |
+                    m @ Netmessage::ReqDropped => {
                         route_message(&zach_sender, m);
-                    }
-                    Netmessage::WorldSrv(w) => {
-                        server_sender.send(w).unwrap_or_else(|e| {
-                            panic!("Error: Failed to send world view to server: {}", e)
-                        });
                     }
                     m => {
                         println!("{}: {:?}",
@@ -382,14 +355,6 @@ pub fn handle_client(mut stream: TcpStream,
             // Send Heartbeat.
             stream.write_all(&heartbeat[..])
                 .unwrap_or_else(|e| panic!("Failed to send Heartbeat: {}", e));
-            // Only send SrvReqWorld to Geordon.
-            if let Some(ref n) = self_name {
-                if *n == Netmessage::NameGeordon {
-                    // Send SrvReqWorld.
-                    stream.write_all(&serv_req_world[..])
-                        .unwrap_or_else(|e| panic!("Failed to send SrvReqWorld: {}", e));
-                }
-            }
         }
         if currtime - prev_request_netstats > time::Duration::from_secs(5) {
             prev_request_netstats = currtime;

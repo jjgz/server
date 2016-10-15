@@ -7,5 +7,3 @@ authors = ["Geordon Worley <vadixidav@gmail.com>"]
 serde = "0.8"
 serde_derive = "0.8"
 serde_json = "0.8"
-glium = "0.15.0"
-glowygraph = "0.7.2"
