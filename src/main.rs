@@ -1,8 +1,9 @@
-#![feature(custom_derive, plugin)]
-#![plugin(serde_macros)]
+#![feature(proc_macro)]
 
 extern crate serde;
 extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
 
 extern crate glium;
 extern crate glowygraph;
