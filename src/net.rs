@@ -29,6 +29,10 @@ pub enum Netmessage {
     NameGeordon,
     NameZach,
     NameJoe,
+    NameDebugJosh,
+    NameDebugGeordon,
+    NameDebugZach,
+    NameDebugJoe,
     Netstats {
         #[serde(rename = "myName")]
         my_name: String,
@@ -102,6 +106,10 @@ impl Netmessage {
             Netmessage::NameJoe => "Joe",
             Netmessage::NameJosh => "Josh",
             Netmessage::NameZach => "Zach",
+            Netmessage::NameDebugGeordon => "DebugGeordon",
+            Netmessage::NameDebugJoe => "DebugJoe",
+            Netmessage::NameDebugJosh => "DebugJosh",
+            Netmessage::NameDebugZach => "DebugZach",
             _ => "Unnamed",
         })
     }
@@ -214,7 +222,11 @@ pub fn handle_client(mut stream: TcpStream,
                      geordon_sender: PSender,
                      josh_sender: PSender,
                      joe_sender: PSender,
-                     zach_sender: PSender) {
+                     zach_sender: PSender,
+                     debug_geordon_sender: PSender,
+                     debug_josh_sender: PSender,
+                     debug_joe_sender: PSender,
+                     debug_zach_sender: PSender) {
     println!("New connection.");
 
     // The Wifly always sends this 7-byte sequence on connection.
@@ -291,6 +303,34 @@ pub fn handle_client(mut stream: TcpStream,
                         *zach_sender.lock().unwrap() = Some(chan.0);
                         self_name = Some(Netmessage::NameZach);
                         println!("Zach robot identified.");
+                    }
+                    Netmessage::NameDebugGeordon => {
+                        let chan = channel::<Netmessage>();
+                        self_receiver = Some(chan.1);
+                        *debug_geordon_sender.lock().unwrap() = Some(chan.0);
+                        self_name = Some(Netmessage::NameDebugGeordon);
+                        println!("Debug Geordon robot identified.");
+                    }
+                    Netmessage::NameDebugJoe => {
+                        let chan = channel();
+                        self_receiver = Some(chan.1);
+                        *debug_joe_sender.lock().unwrap() = Some(chan.0);
+                        self_name = Some(Netmessage::NameDebugJoe);
+                        println!("Debug Joe robot identified.");
+                    }
+                    Netmessage::NameDebugJosh => {
+                        let chan = channel();
+                        self_receiver = Some(chan.1);
+                        *debug_josh_sender.lock().unwrap() = Some(chan.0);
+                        self_name = Some(Netmessage::NameDebugJosh);
+                        println!("It's Debug Josh bitch.");
+                    }
+                    Netmessage::NameDebugZach => {
+                        let chan = channel();
+                        self_receiver = Some(chan.1);
+                        *debug_zach_sender.lock().unwrap() = Some(chan.0);
+                        self_name = Some(Netmessage::NameDebugZach);
+                        println!("Debug Zach robot identified.");
                     }
                     m @ Netmessage::ReqMovement |
                     m @ Netmessage::JF(..) |
@@ -374,27 +414,29 @@ pub fn handle_client(mut stream: TcpStream,
 #[test]
 fn test_world_json() {
     use std::io::stderr;
-    writeln!(&mut stderr(), "World json: {}",
+    writeln!(&mut stderr(),
+             "World json: {}",
              serde_json::to_string(&Netmessage::WorldJoe(World {
-                 frame: 0,
-                 piece: WorldPiece::ArenaBorder {
-                     p0: EndPoint {
-                         point: Point {
-                             x: -0.5,
-                             y: -0.5,
-                             v: 0.001,
+                     frame: 0,
+                     piece: WorldPiece::ArenaBorder {
+                         p0: EndPoint {
+                             point: Point {
+                                 x: -0.5,
+                                 y: -0.5,
+                                 v: 0.001,
+                             },
+                             open: false,
                          },
-                         open: false,
-                     },
-                     p1: EndPoint {
-                         point: Point {
-                             x: -0.5,
-                             y: -0.5,
-                             v: 0.001,
+                         p1: EndPoint {
+                             point: Point {
+                                 x: -0.5,
+                                 y: -0.5,
+                                 v: 0.001,
+                             },
+                             open: false,
                          },
-                         open: false,
                      },
-                 },
-             }))
-                 .unwrap()).unwrap();
+                 }))
+                 .unwrap())
+        .unwrap();
 }

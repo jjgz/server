@@ -18,6 +18,10 @@ fn main() {
     let josh_sender = Arc::new(Mutex::new(None));
     let joe_sender = Arc::new(Mutex::new(None));
     let zach_sender = Arc::new(Mutex::new(None));
+    let debug_geordon_sender = Arc::new(Mutex::new(None));
+    let debug_josh_sender = Arc::new(Mutex::new(None));
+    let debug_joe_sender = Arc::new(Mutex::new(None));
+    let debug_zach_sender = Arc::new(Mutex::new(None));
 
     let bindaddress = args()
         .nth(1)
@@ -29,17 +33,31 @@ fn main() {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                let (geordon_sender, josh_sender, joe_sender, zach_sender) =
-                    (geordon_sender.clone(),
-                     josh_sender.clone(),
-                     joe_sender.clone(),
-                     zach_sender.clone());
+                let (geordon_sender,
+                     josh_sender,
+                     joe_sender,
+                     zach_sender,
+                     debug_geordon_sender,
+                     debug_josh_sender,
+                     debug_joe_sender,
+                     debug_zach_sender) = (geordon_sender.clone(),
+                                           josh_sender.clone(),
+                                           joe_sender.clone(),
+                                           zach_sender.clone(),
+                                           debug_geordon_sender.clone(),
+                                           debug_josh_sender.clone(),
+                                           debug_joe_sender.clone(),
+                                           debug_zach_sender.clone());
                 thread::spawn(move || {
                     net::handle_client(stream,
                                        geordon_sender,
                                        josh_sender,
                                        joe_sender,
-                                       zach_sender);
+                                       zach_sender,
+                                       debug_geordon_sender,
+                                       debug_josh_sender,
+                                       debug_joe_sender,
+                                       debug_zach_sender);
                 });
             }
             Err(e) => {
