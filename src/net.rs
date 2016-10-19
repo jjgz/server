@@ -302,5 +302,6 @@ pub fn handle_client(mut stream: TcpStream,
             stream.write_all(&request_name[..])
                 .unwrap_or_else(|e| panic!("Failed to send ReqName: {}", e));
         }
+        stream.flush().unwrap();
     }
 }
