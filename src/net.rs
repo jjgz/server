@@ -257,6 +257,9 @@ pub fn handle_client(mut stream: TcpStream,
                     m @ Netmessage::ReqDropped => {
                         route_message(&zach_sender, m);
                     }
+                    m @ Netmessage::DebugGeordon(..) => {
+                        route_message(&debug_geordon_sender, m);
+                    }
                     m => {
                         println!("{}: {:?}",
                                  self_name.as_ref()
