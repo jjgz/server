@@ -231,6 +231,11 @@ pub fn handle_client(mut stream: TcpStream,
                     m @ Netmessage::JE(..) => {
                         route_message(&joe_sender, m);
                     }
+                    m @ Netmessage::DebugJF(..) |
+                    m @ Netmessage::DebugJE(..) |
+                    m @ Netmessage::DebugOC(..) => {
+                        route_message(&debug_joe_sender, m);
+                    }
                     m @ Netmessage::CF(..) |
                     m @ Netmessage::CE(..) |
                     m @ Netmessage::CT(..) |
