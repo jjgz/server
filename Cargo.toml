@@ -5,4 +5,4 @@ authors = ["Geordon Worley <vadixidav@gmail.com>"]
 
 [dependencies]
 serde_json = "0.8"
-rnet = {git = "https://github.com/jjgz/rnet", branch = "josh_dev"}
+rnet = {git = "https://github.com/jjgz/rnet"}
