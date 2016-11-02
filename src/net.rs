@@ -226,6 +226,7 @@ pub fn handle_client(mut stream: TcpStream,
                         self_name = Some(Netmessage::NameDebugZach);
                         println!("Debug Zach robot identified.");
                     }
+
                     m @ Netmessage::ReqMovement |
                     m @ Netmessage::JF(..) |
                     m @ Netmessage::JE(..) |
@@ -243,6 +244,8 @@ pub fn handle_client(mut stream: TcpStream,
                     m @ Netmessage::CT(..) |
                     m @ Netmessage::Stopped(..) |
                     m @ Netmessage::ReqInPosition |
+                    m @ Netmessage::Targets(..) |
+                    m @ Netmessage::HalfRow(..) |
                     m @ Netmessage::EdgeDetect(..) |
                     m @ Netmessage::EdgeDropped(..) |
                     m @ Netmessage::Distance(..) |
@@ -251,8 +254,10 @@ pub fn handle_client(mut stream: TcpStream,
                         route_message(&josh_sender, m);
                     }
                     m @ Netmessage::Movement(..) |
-                    m @ Netmessage::JoeReqPoints |
-                    m @ Netmessage::JoshReqPoints |
+                    m @ Netmessage::GDReqHalfRow(..) |
+                    m @ Netmessage::ReqHalfRow(..) |
+                    m @ Netmessage::ReqTargets |
+                    m @ Netmessage::GDReqPing |
                     m @ Netmessage::ReqStopped => {
                         route_message(&geordon_sender, m);
                     }
@@ -263,6 +268,11 @@ pub fn handle_client(mut stream: TcpStream,
                     m @ Netmessage::ReqGrabbed |
                     m @ Netmessage::ReqDropped => {
                         route_message(&zach_sender, m);
+                    }
+                    m @ Netmessage::DebugGeordon(..) |
+                    m @ Netmessage::GDPing |
+                    m @ Netmessage::GDHalfRow(..) => {
+                        route_message(&debug_geordon_sender, m);
                     }
                     m => {
                         println!("{}: {:?}",
@@ -309,5 +319,6 @@ pub fn handle_client(mut stream: TcpStream,
             stream.write_all(&request_name[..])
                 .unwrap_or_else(|e| panic!("Failed to send ReqName: {}", e));
         }
+        stream.flush().unwrap();
     }
 }
