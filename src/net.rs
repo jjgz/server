@@ -244,6 +244,7 @@ pub fn handle_client(mut stream: TcpStream,
                     m @ Netmessage::GDReqHalfRow(..) |
                     m @ Netmessage::ReqHalfRow(..) |
                     m @ Netmessage::ReqTargets |
+                    m @ Netmessage::GDReqPing |
                     m @ Netmessage::ReqStopped => {
                         route_message(&geordon_sender, m);
                     }
@@ -256,6 +257,7 @@ pub fn handle_client(mut stream: TcpStream,
                         route_message(&zach_sender, m);
                     }
                     m @ Netmessage::DebugGeordon(..) |
+                    m @ Netmessage::GDPing |
                     m @ Netmessage::GDHalfRow(..) => {
                         route_message(&debug_geordon_sender, m);
                     }
