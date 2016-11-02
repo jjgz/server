@@ -228,12 +228,14 @@ pub fn handle_client(mut stream: TcpStream,
                     }
                     m @ Netmessage::ReqMovement |
                     m @ Netmessage::JF(..) |
-                    m @ Netmessage::JE(..) => {
+                    m @ Netmessage::JE(..) |
+                    m @ Netmessage::DebugJoeTread(..) => {
                         route_message(&joe_sender, m);
                     }
                     m @ Netmessage::DebugJF(..) |
                     m @ Netmessage::DebugJE(..) |
-                    m @ Netmessage::DebugOC(..) => {
+                    m @ Netmessage::DebugJoeDistance(..) |
+                    m @ Netmessage::DebugJoeOC(..) => {
                         route_message(&debug_joe_sender, m);
                     }
                     m @ Netmessage::CF(..) |
