@@ -233,15 +233,10 @@ pub fn handle_client(mut stream: TcpStream,
                     m @ Netmessage::DebugJoeTread(..) => {
                         route_message(&joe_sender, m);
                     }
-                    m @ Netmessage::DebugJF(..) |
-                    m @ Netmessage::DebugJE(..) |
                     m @ Netmessage::DebugJoeDistance(..) |
                     m @ Netmessage::DebugJoeOC(..) => {
                         route_message(&debug_joe_sender, m);
                     }
-                    m @ Netmessage::CF(..) |
-                    m @ Netmessage::CE(..) |
-                    m @ Netmessage::CT(..) |
                     m @ Netmessage::Stopped(..) |
                     m @ Netmessage::ReqInPosition |
                     m @ Netmessage::Targets(..) |
