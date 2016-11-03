@@ -226,6 +226,13 @@ pub fn handle_client(mut stream: TcpStream,
                         self_name = Some(Netmessage::NameDebugZach);
                         println!("Debug Zach robot identified.");
                     }
+					m @ Netmessage::PDebugJosh(..) |
+					m @ Netmessage::ADebugJosh(..) |
+					m @ Netmessage::RDebugJosh(..) |
+					m @ Netmessage::GReqGrabbed |
+					m @ Netmessage::DReqDropped=> {
+                        route_message(&debug_josh_sender, m);
+                    }
                     m @ Netmessage::ReqMovement |
                     m @ Netmessage::JF(..) |
                     m @ Netmessage::JE(..) => {
@@ -234,12 +241,16 @@ pub fn handle_client(mut stream: TcpStream,
                     m @ Netmessage::CF(..) |
                     m @ Netmessage::CE(..) |
                     m @ Netmessage::CT(..) |
+					m @ Netmessage::TestMove(..) |
+					m @ Netmessage::TestRotate(..) |
+					m @ Netmessage::ReqTestReset |
                     m @ Netmessage::Stopped(..) |
                     m @ Netmessage::ReqInPosition |
                     m @ Netmessage::EdgeDetect(..) |
                     m @ Netmessage::EdgeDropped(..) |
                     m @ Netmessage::Distance(..) |
                     m @ Netmessage::Grabbed(..) |
+					m @ Netmessage::TestRow(..) |
                     m @ Netmessage::Dropped(..) => {
                         route_message(&josh_sender, m);
                     }
