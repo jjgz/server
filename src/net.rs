@@ -228,8 +228,13 @@ pub fn handle_client(mut stream: TcpStream,
                     }
 
                     m @ Netmessage::ReqMovement |
+                    m @ Netmessage::DebugJoeUltra(..) |
                     m @ Netmessage::DebugJoeTread(..) => {
                         route_message(&joe_sender, m);
+                    }
+                    m @ Netmessage::Movement(..) => {
+                        route_message(&debug_joe_sender, m.clone());
+                        route_message(&geordon_sender, m);
                     }
                     m @ Netmessage::DebugJoeDistance(..) |
                     m @ Netmessage::DebugJoeOC(..) => {
@@ -246,7 +251,6 @@ pub fn handle_client(mut stream: TcpStream,
                     m @ Netmessage::Dropped(..) => {
                         route_message(&josh_sender, m);
                     }
-                    m @ Netmessage::Movement(..) |
                     m @ Netmessage::GDReqHalfRow(..) |
                     m @ Netmessage::ReqHalfRow(..) |
                     m @ Netmessage::ReqTargets |

@@ -5,4 +5,5 @@ authors = ["Geordon Worley <vadixidav@gmail.com>"]
 
 [dependencies]
 serde_json = "0.8"
+serde_codegen = "0.8.16"
 rnet = {git = "https://github.com/jjgz/rnet"}
