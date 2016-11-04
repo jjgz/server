@@ -227,6 +227,13 @@ pub fn handle_client(mut stream: TcpStream,
                         println!("Debug Zach robot identified.");
                     }
 
+                    m @ Netmessage::Initialize{..} => {
+                        route_message(&josh_sender, m.clone());
+                        route_message(&joe_sender, m.clone());
+                        route_message(&geordon_sender, m.clone());
+                        route_message(&zach_sender, m);
+                    }
+
 					m @ Netmessage::PDebugJosh(..) |
 					m @ Netmessage::ADebugJosh(..) |
 					m @ Netmessage::RDebugJosh(..) |
