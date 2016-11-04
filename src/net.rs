@@ -231,7 +231,8 @@ pub fn handle_client(mut stream: TcpStream,
 					m @ Netmessage::ADebugJosh(..) |
 					m @ Netmessage::RDebugJosh(..) |
 					m @ Netmessage::GReqGrabbed |
-					m @ Netmessage::DReqDropped=> {
+					m @ Netmessage::DReqDropped |
+					m @ Netmessage::HDebugJosh(..) => {
                         route_message(&debug_josh_sender, m);
                     }
 
@@ -257,7 +258,8 @@ pub fn handle_client(mut stream: TcpStream,
                     m @ Netmessage::Distance(..) |
                     m @ Netmessage::Grabbed(..) |
 					m @ Netmessage::TestRow(..) |
-                    m @ Netmessage::Dropped(..) => {
+                    m @ Netmessage::Dropped(..) |
+					m @ Netmessage::JCHalfRow(..)=> {
                         route_message(&josh_sender, m);
                     }
                     m @ Netmessage::Movement(..) |
