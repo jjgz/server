@@ -276,7 +276,10 @@ pub fn handle_client(mut stream: TcpStream,
                     m @ Netmessage::ReqHalfRow(..) |
                     m @ Netmessage::ReqTargets |
                     m @ Netmessage::GDReqPing |
-                    m @ Netmessage::ReqStopped => {
+                    m @ Netmessage::ReqStopped |
+                    m @ Netmessage::GDBuild |
+                    m @ Netmessage::GDFinish |
+                    m @ Netmessage::GDAligned => {
                         route_message(&geordon_sender, m);
                     }
                     m @ Netmessage::InPosition(..) |
