@@ -249,6 +249,7 @@ pub fn handle_client(mut stream: TcpStream,
                     }
                     m @ Netmessage::Movement(..) => {
                         route_message(&debug_joe_sender, m.clone());
+                        route_message(&debug_geordon_sender, m.clone());
                         route_message(&geordon_sender, m);
                     }
 
