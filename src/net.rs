@@ -275,7 +275,8 @@ pub fn handle_client(mut stream: TcpStream,
                         route_message(&geordon_sender, m);
                     }
                     m @ Netmessage::InPosition(..) |
-                    m @ Netmessage::ReqEdgeDetect |
+                    m @ Netmessage::ReqEdgeDetectLeft |
+					m @ Netmessage::ReqEdgeDetectRight |
                     m @ Netmessage::ReqEdgeDropped |
                     m @ Netmessage::ReqDistance |
                     m @ Netmessage::ReqGrabbed |
