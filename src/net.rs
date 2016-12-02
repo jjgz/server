@@ -227,6 +227,13 @@ pub fn handle_client(mut stream: TcpStream,
                         println!("Debug Zach robot identified.");
                     }
 
+                    m @ Netmessage::Initialize{..} => {
+                        route_message(&josh_sender, m.clone());
+                        route_message(&joe_sender, m.clone());
+                        route_message(&geordon_sender, m.clone());
+                        route_message(&zach_sender, m);
+                    }
+
 					m @ Netmessage::PDebugJosh(..) |
 					m @ Netmessage::ADebugJosh(..) |
 					m @ Netmessage::RDebugJosh(..) |
@@ -238,11 +245,13 @@ pub fn handle_client(mut stream: TcpStream,
 
                     m @ Netmessage::ReqMovement |
                     m @ Netmessage::DebugJoeUltra(..) |
-                    m @ Netmessage::DebugJoeTread(..) => {
+                    m @ Netmessage::DebugJoeTread(..) |
+                    m @ Netmessage::Proximity{..} => {
                         route_message(&joe_sender, m);
                     }
                     m @ Netmessage::Movement(..) => {
                         route_message(&debug_joe_sender, m.clone());
+                        route_message(&debug_geordon_sender, m.clone());
                         route_message(&geordon_sender, m);
                     }
 
@@ -271,7 +280,11 @@ pub fn handle_client(mut stream: TcpStream,
                     m @ Netmessage::ReqHalfRow(..) |
                     m @ Netmessage::ReqTargets |
                     m @ Netmessage::GDReqPing |
-                    m @ Netmessage::ReqStopped => {
+                    m @ Netmessage::ReqStopped |
+                    m @ Netmessage::GDBuild |
+                    m @ Netmessage::GDFinish |
+                    m @ Netmessage::GDAligned |
+                    m @ Netmessage::ReqProximity => {
                         route_message(&geordon_sender, m);
                     }
                     m @ Netmessage::InPosition(..) |
