@@ -246,6 +246,7 @@ pub fn handle_client(mut stream: TcpStream,
                     m @ Netmessage::ReqMovement |
                     m @ Netmessage::DebugJoeUltra(..) |
                     m @ Netmessage::DebugJoeTread(..) |
+                    m @ Netmessage::GDStartAlign |
                     m @ Netmessage::Proximity{..} => {
                         route_message(&joe_sender, m);
                     }
