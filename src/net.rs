@@ -284,10 +284,15 @@ pub fn handle_client(mut stream: TcpStream,
                     m @ Netmessage::ReqStopped |
                     m @ Netmessage::GDBuild |
                     m @ Netmessage::GDFinish |
-                    m @ Netmessage::GDAligned |
                     m @ Netmessage::ReqProximity => {
                         route_message(&geordon_sender, m);
                     }
+
+                    m @ Netmessage::GDAligned => {
+                        route_message(&geordon_sender, m.clone());
+                        route_message(&joe_sender, m);
+                    }
+
                     m @ Netmessage::InPosition(..) |
                     m @ Netmessage::ReqEdgeDetectLeft |
 					m @ Netmessage::ReqEdgeDetectRight |
