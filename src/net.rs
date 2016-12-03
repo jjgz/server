@@ -247,6 +247,7 @@ pub fn handle_client(mut stream: TcpStream,
                     m @ Netmessage::DebugJoeUltra(..) |
                     m @ Netmessage::DebugJoeTread(..) |
                     m @ Netmessage::GDStartAlign |
+                    m @ Netmessage::Assumed(..) |
                     m @ Netmessage::Proximity{..} => {
                         route_message(&joe_sender, m);
                     }
@@ -283,6 +284,7 @@ pub fn handle_client(mut stream: TcpStream,
                     m @ Netmessage::GDReqPing |
                     m @ Netmessage::ReqStopped |
                     m @ Netmessage::GDBuild |
+                    m @ Netmessage::ReqAssumed |
                     m @ Netmessage::GDFinish |
                     m @ Netmessage::ReqProximity => {
                         route_message(&geordon_sender, m);
